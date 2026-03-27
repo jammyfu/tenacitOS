@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Clock, Calendar, ChevronDown, Zap } from "lucide-react";
+import { X, Calendar, ChevronDown, Zap } from "lucide-react";
 import { cronToHuman, getNextRuns, isValidCron, CRON_PRESETS } from "@/lib/cron-parser";
 import type { CronJob } from "./CronJobCard";
 
@@ -67,6 +67,7 @@ function buildCron(mode: FrequencyMode, opts: Record<string, number | number[]>)
 }
 
 export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobModalProps) {
+  const [agentId, setAgentId] = useState("main");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [schedule, setSchedule] = useState("0 9 * * *");
@@ -87,12 +88,14 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
   useEffect(() => {
     if (isOpen) {
       if (editingJob) {
+        setAgentId(editingJob.agentId || "main");
         setName(editingJob.name);
         setDescription(editingJob.description);
         setSchedule(typeof editingJob.schedule === "string" ? editingJob.schedule : String(editingJob.schedule));
         setTimezone(editingJob.timezone);
         setFrequencyMode("custom");
       } else {
+        setAgentId("main");
         setName("");
         setDescription("");
         setSchedule("0 9 * * *");
@@ -118,6 +121,7 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
+    if (!agentId.trim()) newErrors.agentId = "Target agent is required";
     if (!name.trim()) newErrors.name = "Name is required";
     if (!schedule.trim()) newErrors.schedule = "Schedule is required";
     else if (!isValidCron(schedule)) newErrors.schedule = "Invalid cron expression";
@@ -132,6 +136,7 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
     try {
       await onSave({
         id: editingJob?.id,
+        agentId: agentId.trim(),
         name: name.trim(),
         description: description.trim(),
         schedule: schedule.trim(),
@@ -139,6 +144,11 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
         enabled: editingJob?.enabled ?? true,
       });
       onClose();
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        submit: error instanceof Error ? error.message : "Failed to save cron job",
+      }));
     } finally {
       setIsSaving(false);
     }
@@ -174,6 +184,27 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
+              Target Agent *
+            </label>
+            <input
+              type="text"
+              value={agentId}
+              onChange={(e) => { setAgentId(e.target.value); if (errors.agentId) setErrors((p) => ({ ...p, agentId: "" })); }}
+              placeholder="main"
+              style={{
+                width: "100%", padding: "0.75rem 1rem",
+                backgroundColor: "var(--card-elevated)",
+                border: `1px solid ${errors.agentId ? "var(--error)" : "var(--border)"}`,
+                borderRadius: "0.5rem", color: "var(--text-primary)", outline: "none",
+                fontSize: "0.9rem",
+              }}
+            />
+            {errors.agentId && <p className="mt-1 text-sm" style={{ color: "var(--error)" }}>{errors.agentId}</p>}
+          </div>
+
           {/* Name */}
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
@@ -506,6 +537,21 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {errors.submit && (
+            <div
+              style={{
+                padding: "0.875rem 1rem",
+                borderRadius: "0.75rem",
+                backgroundColor: "color-mix(in srgb, var(--error) 12%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--error) 30%, transparent)",
+                color: "var(--error)",
+                fontSize: "0.875rem",
+              }}
+            >
+              {errors.submit}
             </div>
           )}
 

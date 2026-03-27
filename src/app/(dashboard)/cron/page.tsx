@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Clock, RefreshCw, AlertCircle, LayoutGrid, CalendarDays, Zap } from "lucide-react";
+import { Clock, RefreshCw, AlertCircle, LayoutGrid, CalendarDays, Zap, Plus } from "lucide-react";
 import { CronJobCard, type CronJob } from "@/components/CronJobCard";
+import { CronJobModal } from "@/components/CronJobModal";
 import { CronWeeklyTimeline } from "@/components/CronWeeklyTimeline";
 
 type ViewMode = "cards" | "timeline";
@@ -14,6 +15,8 @@ export default function CronJobsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [runToast, setRunToast] = useState<{ id: string; status: "success" | "error"; name: string } | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<CronJob | null>(null);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -66,6 +69,42 @@ export default function CronJobsPage() {
     }
   };
 
+  const handleSaveJob = async (job: Partial<CronJob>) => {
+    const isEditing = Boolean(job.id);
+    const res = await fetch("/api/cron", {
+      method: isEditing ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(job),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || "Failed to save job");
+      throw new Error(data.error || "Failed to save job");
+    }
+
+    setJobs((prev) => {
+      if (isEditing) {
+        return prev.map((existing) => (existing.id === data.id ? data : existing));
+      }
+      return [data, ...prev];
+    });
+
+    setEditingJob(null);
+    setError(null);
+    setIsModalOpen(false);
+  };
+
+  const openCreateModal = () => {
+    setEditingJob(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (job: CronJob) => {
+    setEditingJob(job);
+    setIsModalOpen(true);
+  };
+
   const handleRun = async (id: string) => {
     const job = jobs.find((j) => j.id === id);
     const res = await fetch("/api/cron/run", {
@@ -105,6 +144,24 @@ export default function CronJobsPage() {
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button
+            onClick={openCreateModal}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.65rem 1rem',
+              borderRadius: '0.6rem',
+              border: '1px solid color-mix(in srgb, var(--accent) 45%, transparent)',
+              backgroundColor: 'color-mix(in srgb, var(--accent) 18%, transparent)',
+              color: 'var(--text-primary)',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            New Job
+          </button>
           {/* View mode toggle */}
           <div
             style={{
@@ -327,7 +384,7 @@ export default function CronJobsPage() {
               <CronJobCard
                 job={job}
                 onToggle={handleToggle}
-                onEdit={() => {}}
+                onEdit={openEditModal}
                 onDelete={handleDelete}
                 onRun={handleRun}
               />
@@ -401,6 +458,16 @@ export default function CronJobsPage() {
           to { transform: translateX(0); opacity: 1; }
         }
       `}</style>
+
+      <CronJobModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingJob(null);
+        }}
+        editingJob={editingJob}
+        onSave={handleSaveJob}
+      />
     </div>
   );
 }
