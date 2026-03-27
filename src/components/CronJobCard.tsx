@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Clock,
   Calendar,
@@ -61,6 +61,8 @@ const AGENT_EMOJI: Record<string, string> = {
   freelance: "🔧",
 };
 
+const HISTORY_STATUS_OPTIONS = ["all", "success", "error", "running"];
+
 export function CronJobCard({ job, onToggle, onEdit, onDelete, onRun }: CronJobCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
@@ -69,6 +71,11 @@ export function CronJobCard({ job, onToggle, onEdit, onDelete, onRun }: CronJobC
   const [showHistory, setShowHistory] = useState(false);
   const [runHistory, setRunHistory] = useState<RunHistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyStatus, setHistoryStatus] = useState("all");
+  const [historyLimit, setHistoryLimit] = useState("5");
+  const [historyFrom, setHistoryFrom] = useState("");
+  const [historyTo, setHistoryTo] = useState("");
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   const handleToggle = async () => {
     setIsToggling(true);
@@ -95,18 +102,31 @@ export function CronJobCard({ job, onToggle, onEdit, onDelete, onRun }: CronJobC
   const loadHistory = useCallback(async () => {
     if (loadingHistory) return;
     setLoadingHistory(true);
+    setHistoryError(null);
     try {
-      const res = await fetch(`/api/cron/runs?id=${job.id}`);
+      const params = new URLSearchParams({
+        id: job.id,
+        status: historyStatus,
+        limit: historyLimit,
+      });
+      if (historyFrom) params.set("from", historyFrom);
+      if (historyTo) params.set("to", historyTo);
+
+      const res = await fetch(`/api/cron/runs?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setRunHistory(data.runs || []);
+      } else {
+        const data = await res.json();
+        setHistoryError(data.error || "Failed to load run history");
       }
     } catch {
       setRunHistory([]);
+      setHistoryError("Failed to load run history");
     } finally {
       setLoadingHistory(false);
     }
-  }, [job.id, loadingHistory]);
+  }, [historyFrom, historyLimit, historyStatus, historyTo, job.id, loadingHistory]);
 
   const handleToggleHistory = () => {
     const next = !showHistory;
@@ -115,6 +135,11 @@ export function CronJobCard({ job, onToggle, onEdit, onDelete, onRun }: CronJobC
       loadHistory();
     }
   };
+
+  useEffect(() => {
+    if (!showHistory) return;
+    loadHistory();
+  }, [showHistory, loadHistory]);
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "—";
@@ -164,6 +189,19 @@ export function CronJobCard({ job, onToggle, onEdit, onDelete, onRun }: CronJobC
     if (ms < 1000) return `${ms}ms`;
     if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
     return `${(ms / 60000).toFixed(1)}m`;
+  };
+
+  const getRunStatusColor = (status: string) => {
+    switch (status) {
+      case "success":
+        return "var(--success)";
+      case "error":
+        return "var(--error)";
+      case "running":
+        return "var(--warning)";
+      default:
+        return "var(--text-muted)";
+    }
   };
 
   return (
@@ -420,31 +458,108 @@ export function CronJobCard({ job, onToggle, onEdit, onDelete, onRun }: CronJobC
                 padding: '0.5rem 0.75rem',
                 borderBottom: '1px solid var(--border)',
                 display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
+                flexDirection: 'column',
+                gap: '0.75rem',
                 fontSize: '0.75rem',
                 fontWeight: 600,
                 color: 'var(--text-secondary)'
               }}
             >
-              <History className="w-3.5 h-3.5" />
-              Recent Runs
-              {loadingHistory && <Loader2 className="w-3 h-3 animate-spin ml-auto" />}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <History className="w-3.5 h-3.5" />
+                Recent Runs
+                {loadingHistory && <Loader2 className="w-3 h-3 animate-spin ml-auto" />}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <select
+                  value={historyStatus}
+                  onChange={(e) => setHistoryStatus(e.target.value)}
+                  style={{
+                    padding: '0.45rem 0.55rem',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '0.4rem',
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  {HISTORY_STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status === "all" ? "All statuses" : status}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={historyLimit}
+                  onChange={(e) => setHistoryLimit(e.target.value)}
+                  style={{
+                    padding: '0.45rem 0.55rem',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '0.4rem',
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  {["5", "10", "20"].map((limit) => (
+                    <option key={limit} value={limit}>
+                      Last {limit}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="date"
+                  value={historyFrom}
+                  onChange={(e) => setHistoryFrom(e.target.value)}
+                  style={{
+                    padding: '0.45rem 0.55rem',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '0.4rem',
+                    fontSize: '0.75rem',
+                  }}
+                />
+
+                <input
+                  type="date"
+                  value={historyTo}
+                  onChange={(e) => setHistoryTo(e.target.value)}
+                  style={{
+                    padding: '0.45rem 0.55rem',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '0.4rem',
+                    fontSize: '0.75rem',
+                  }}
+                />
+              </div>
             </div>
 
-            {!loadingHistory && runHistory.length === 0 && (
+            {historyError && (
+              <div style={{ padding: '0.75rem', fontSize: '0.75rem', color: 'var(--error)', textAlign: 'center' }}>
+                {historyError}
+              </div>
+            )}
+
+            {!loadingHistory && !historyError && runHistory.length === 0 && (
               <div style={{ padding: '0.75rem', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
                 No run history available
               </div>
             )}
 
-            {runHistory.slice(0, 5).map((run, idx) => (
+            {runHistory.map((run, idx) => (
               <div
                 key={run.id || idx}
                 style={{
                   padding: '0.5rem 0.75rem',
-                  borderBottom: idx < Math.min(runHistory.length, 5) - 1 ? '1px solid var(--border)' : 'none',
-                  display: 'flex',
+                  borderBottom: idx < runHistory.length - 1 ? '1px solid var(--border)' : 'none',
+                  display: 'grid',
+                  gridTemplateColumns: 'auto 1fr auto auto',
                   alignItems: 'center',
                   gap: '0.5rem',
                   fontSize: '0.75rem',
@@ -459,6 +574,17 @@ export function CronJobCard({ job, onToggle, onEdit, onDelete, onRun }: CronJobC
                 )}
                 <span style={{ color: 'var(--text-secondary)', flex: 1 }}>
                   {formatHistoryDate(run.startedAt)}
+                </span>
+                <span
+                  style={{
+                    color: getRunStatusColor(run.status),
+                    backgroundColor: 'color-mix(in srgb, currentColor 12%, transparent)',
+                    borderRadius: '9999px',
+                    padding: '0.15rem 0.5rem',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {run.status}
                 </span>
                 <span style={{ color: 'var(--text-muted)' }}>
                   {formatDuration(run.durationMs)}

@@ -160,6 +160,26 @@ export function setCronJobEnabled(id: string, enabled: boolean): CronJobResponse
   return updateCronJob(id, { enabled });
 }
 
+export function recordCronJobRun(id: string, completedAt: string = new Date().toISOString()): CronJobResponse | null {
+  const jobs = readCronJobs();
+  const index = jobs.findIndex((job) => job.id === id);
+  if (index < 0) return null;
+
+  const current = jobs[index];
+  const updated = normalizeCronJob({
+    ...current,
+    id: current.id,
+    name: current.name,
+    schedule: current.schedule,
+    createdAt: current.createdAt,
+    lastRun: completedAt,
+  });
+
+  jobs[index] = updated;
+  writeCronJobs(jobs);
+  return toCronJobResponse(updated);
+}
+
 export function removeCronJob(id: string): boolean {
   const jobs = readCronJobs();
   const nextJobs = jobs.filter((job) => job.id !== id);
