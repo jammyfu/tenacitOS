@@ -3,6 +3,7 @@ import { existsSync, readFileSync, statSync } from "fs";
 import { join } from "path";
 import { BRANDING } from "@/config/branding";
 import { OPENCLAW_DIR, OPENCLAW_WORKSPACE } from "@/lib/paths";
+import { readWorkspaceIdentity } from "@/lib/workspace-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -211,6 +212,7 @@ export async function GET() {
     const config: OpenClawConfig | null = existsSync(configPath)
       ? JSON.parse(readFileSync(configPath, "utf-8"))
       : null;
+    const workspaceIdentity = readWorkspaceIdentity(OPENCLAW_WORKSPACE);
 
     const configuredAgents = config?.agents?.list ?? [];
 
@@ -219,8 +221,8 @@ export async function GET() {
       const fallbackAgents: OfficeAgent[] = [
         {
           id: "main",
-          name: BRANDING.agentName,
-          emoji: BRANDING.agentEmoji,
+          name: workspaceIdentity.name || BRANDING.agentName,
+          emoji: workspaceIdentity.emoji || BRANDING.agentEmoji,
           color: "#ff6b35",
           role: "Main Agent",
           currentTask: fallbackStatus.currentTask,
@@ -269,8 +271,8 @@ export async function GET() {
       agents: [
         {
           id: "main",
-          name: BRANDING.agentName,
-          emoji: BRANDING.agentEmoji,
+          name: workspaceIdentity.name || BRANDING.agentName,
+          emoji: workspaceIdentity.emoji || BRANDING.agentEmoji,
           color: "#ff6b35",
           role: "Main Agent",
           currentTask: "Office data is temporarily unavailable.",

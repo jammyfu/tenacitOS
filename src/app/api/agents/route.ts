@@ -3,6 +3,7 @@ import { existsSync, readFileSync, statSync } from "fs";
 import { join } from "path";
 import { BRANDING } from "@/config/branding";
 import { OPENCLAW_CONFIG, OPENCLAW_WORKSPACE } from "@/lib/paths";
+import { readWorkspaceIdentity } from "@/lib/workspace-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -93,7 +94,13 @@ function getAgentStatus(workspace: string): { lastActivity?: string; status: "on
 }
 
 function buildFallbackAgents(config: OpenClawConfig | null): Agent[] {
-  const mainInfo = getAgentDisplayInfo("main");
+  const workspaceIdentity = readWorkspaceIdentity(OPENCLAW_WORKSPACE);
+  const defaultMain = getAgentDisplayInfo("main");
+  const mainInfo = {
+    ...defaultMain,
+    name: workspaceIdentity.name || defaultMain.name,
+    emoji: workspaceIdentity.emoji || defaultMain.emoji,
+  };
   const mainStatus = getAgentStatus(OPENCLAW_WORKSPACE);
 
   return [

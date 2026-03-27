@@ -16,6 +16,7 @@ import { readCharacters } from "@/lib/mii-storage";
 import { getPrimaryBinding, getCharacterBindings } from "@/lib/mii-utils";
 import { OPENCLAW_CONFIG, OPENCLAW_WORKSPACE } from "@/lib/paths";
 import { BRANDING } from "@/config/branding";
+import { readWorkspaceIdentity } from "@/lib/workspace-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -37,13 +38,14 @@ export async function GET() {
       const configuredAgents = config?.agents?.list ?? [];
 
       if (configuredAgents.length === 0) {
+        const workspaceIdentity = readWorkspaceIdentity(OPENCLAW_WORKSPACE);
         instances.push({
           id: "main",
-          name: BRANDING.agentName,
+          name: workspaceIdentity.name || BRANDING.agentName,
           status: "unknown",
           workspace: OPENCLAW_WORKSPACE,
           model: config?.agents?.defaults?.model?.primary || "unknown",
-          emoji: BRANDING.agentEmoji,
+          emoji: workspaceIdentity.emoji || BRANDING.agentEmoji,
           color: "#ff6b35",
           runtime: "docker",
           containerName: "openclaw-claw01",
