@@ -66,6 +66,64 @@ function buildCron(mode: FrequencyMode, opts: Record<string, number | number[]>)
   }
 }
 
+function parseCronToBuilder(expr: string): {
+  mode: FrequencyMode;
+  everyMinutes?: number;
+  hour?: number;
+  minute?: number;
+  days?: number[];
+  dayOfMonth?: number;
+} {
+  const parts = expr.trim().split(/\s+/);
+  if (parts.length !== 5) {
+    return { mode: "custom" };
+  }
+
+  const [minute, hour, dayOfMonth, , dayOfWeek] = parts;
+
+  if (minute.startsWith("*/") && hour === "*" && dayOfMonth === "*" && dayOfWeek === "*") {
+    return {
+      mode: "every-minutes",
+      everyMinutes: Number(minute.slice(2)) || 5,
+    };
+  }
+
+  if (/^\d+$/.test(minute) && hour === "*" && dayOfMonth === "*" && dayOfWeek === "*") {
+    return {
+      mode: "hourly",
+      minute: Number(minute),
+    };
+  }
+
+  if (/^\d+$/.test(minute) && /^\d+$/.test(hour) && dayOfMonth === "*" && dayOfWeek === "*") {
+    return {
+      mode: "daily",
+      minute: Number(minute),
+      hour: Number(hour),
+    };
+  }
+
+  if (/^\d+$/.test(minute) && /^\d+$/.test(hour) && dayOfMonth === "*" && /^(\d+)(,\d+)*$/.test(dayOfWeek)) {
+    return {
+      mode: "weekly",
+      minute: Number(minute),
+      hour: Number(hour),
+      days: dayOfWeek.split(",").map(Number),
+    };
+  }
+
+  if (/^\d+$/.test(minute) && /^\d+$/.test(hour) && /^\d+$/.test(dayOfMonth) && dayOfWeek === "*") {
+    return {
+      mode: "monthly",
+      minute: Number(minute),
+      hour: Number(hour),
+      dayOfMonth: Number(dayOfMonth),
+    };
+  }
+
+  return { mode: "custom" };
+}
+
 export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobModalProps) {
   const [agentId, setAgentId] = useState("main");
   const [name, setName] = useState("");
@@ -88,12 +146,20 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
   useEffect(() => {
     if (isOpen) {
       if (editingJob) {
+        const parsed = parseCronToBuilder(
+          typeof editingJob.schedule === "string" ? editingJob.schedule : String(editingJob.schedule)
+        );
         setAgentId(editingJob.agentId || "main");
         setName(editingJob.name);
         setDescription(editingJob.description);
         setSchedule(typeof editingJob.schedule === "string" ? editingJob.schedule : String(editingJob.schedule));
         setTimezone(editingJob.timezone);
-        setFrequencyMode("custom");
+        setFrequencyMode(parsed.mode);
+        setEveryMinutes(parsed.everyMinutes || 15);
+        setSelectedHour(parsed.hour || 9);
+        setSelectedMinute(parsed.minute || 0);
+        setSelectedDays(parsed.days || [1]);
+        setSelectedDayOfMonth(parsed.dayOfMonth || 1);
       } else {
         setAgentId("main");
         setName("");
@@ -101,6 +167,11 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
         setSchedule("0 9 * * *");
         setTimezone("Europe/Madrid");
         setFrequencyMode("daily");
+        setEveryMinutes(15);
+        setSelectedHour(9);
+        setSelectedMinute(0);
+        setSelectedDays([1]);
+        setSelectedDayOfMonth(1);
       }
       setErrors({});
     }
@@ -470,7 +541,17 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
                   <button
                     key={t.cron}
                     type="button"
-                    onClick={() => { setSchedule(t.cron); setFrequencyMode("custom"); setShowTemplates(false); }}
+                    onClick={() => {
+                      const parsed = parseCronToBuilder(t.cron);
+                      setSchedule(t.cron);
+                      setFrequencyMode(parsed.mode);
+                      setEveryMinutes(parsed.everyMinutes || 15);
+                      setSelectedHour(parsed.hour || 9);
+                      setSelectedMinute(parsed.minute || 0);
+                      setSelectedDays(parsed.days || [1]);
+                      setSelectedDayOfMonth(parsed.dayOfMonth || 1);
+                      setShowTemplates(false);
+                    }}
                     style={{
                       padding: "0.375rem 0.875rem",
                       borderRadius: "9999px",
