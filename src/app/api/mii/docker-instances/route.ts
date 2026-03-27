@@ -14,6 +14,8 @@ import { readFileSync, existsSync } from "fs";
 import type { DockerInstance } from "@/lib/mii-types";
 import { readCharacters } from "@/lib/mii-storage";
 import { getPrimaryBinding, getCharacterBindings } from "@/lib/mii-utils";
+import { OPENCLAW_CONFIG, OPENCLAW_WORKSPACE } from "@/lib/paths";
+import { BRANDING } from "@/config/branding";
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +32,25 @@ export async function GET() {
 
   // ── Read from openclaw.json (same as /api/agents) ─────────────────────────
   try {
-    const configPath =
-      (process.env.OPENCLAW_DIR || "/root/.openclaw") + "/openclaw.json";
-    if (existsSync(configPath)) {
-      const config = JSON.parse(readFileSync(configPath, "utf-8"));
-      for (const agent of config?.agents?.list ?? []) {
+    if (existsSync(OPENCLAW_CONFIG)) {
+      const config = JSON.parse(readFileSync(OPENCLAW_CONFIG, "utf-8"));
+      const configuredAgents = config?.agents?.list ?? [];
+
+      if (configuredAgents.length === 0) {
+        instances.push({
+          id: "main",
+          name: BRANDING.agentName,
+          status: "unknown",
+          workspace: OPENCLAW_WORKSPACE,
+          model: config?.agents?.defaults?.model?.primary || "unknown",
+          emoji: BRANDING.agentEmoji,
+          color: "#ff6b35",
+          runtime: "docker",
+          containerName: "openclaw-claw01",
+        });
+      }
+
+      for (const agent of configuredAgents) {
         const agentId: string = agent.id;
         const assignedCharacter = characters.find(
           (character) => getPrimaryBinding(character)?.instanceId === agentId

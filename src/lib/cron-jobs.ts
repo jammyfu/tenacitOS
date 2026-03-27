@@ -95,6 +95,8 @@ export function readCronJobs(): StoredCronJob[] {
 
       return normalizeCronJob({
         ...job,
+        name: job.name,
+        schedule: job.schedule,
         id: typeof job.id === "string" && job.id.startsWith("local-")
           ? job.id
           : `local-${job.id || randomUUID()}`,
