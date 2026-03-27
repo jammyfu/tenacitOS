@@ -99,6 +99,27 @@ export interface MiiStats {
   focus: number;
 }
 
+// ─── openclaw / Docker Binding ───────────────────────────────────────────────
+
+export type BindingMode = "primary" | "secondary";
+
+export type BindingDuty =
+  | "主控"
+  | "开发"
+  | "测试"
+  | "部署"
+  | "监控"
+  | "研究"
+  | "支援";
+
+export interface MiiInstanceBinding {
+  instanceId: string;
+  mode: BindingMode;
+  duty: BindingDuty;
+  label?: string;
+  autoLaunch?: boolean;
+}
+
 // ─── Personality & Role ───────────────────────────────────────────────────────
 
 export type Personality =
@@ -138,8 +159,12 @@ export interface MiiCharacter {
   personality: Personality[];
   role: CharacterRole;
   description: string;
-  /** Bound openclaw Docker instance ID (e.g. "main", "studio", "infra") */
+  /** Legacy single-binding field kept for backward compatibility. */
   dockerInstanceId?: string;
+  /** Primary openclaw Docker instance bound to this role. */
+  primaryInstanceId?: string;
+  /** Multiple openclaw Docker instance bindings with role-specific duties. */
+  instanceBindings: MiiInstanceBinding[];
   stats: MiiStats;
   status: CharacterStatus;
   createdAt: string;
@@ -156,6 +181,13 @@ export interface DockerInstance {
   model?: string;
   emoji?: string;
   color?: string;
+  runtime?: "docker" | "openclaw" | "unknown";
+  containerName?: string;
+  composeService?: string;
+  image?: string;
+  assignedCharacterId?: string;
+  assignedCharacterName?: string;
+  assignedDuty?: BindingDuty;
 }
 
 // ─── Default Values ───────────────────────────────────────────────────────────
@@ -185,6 +217,15 @@ export const DEFAULT_STATS: MiiStats = {
   creativity: 50,
   coordination: 50,
   focus: 50,
+};
+
+export const DEFAULT_INSTANCE_BINDING: Pick<
+  MiiInstanceBinding,
+  "mode" | "duty" | "autoLaunch"
+> = {
+  mode: "secondary",
+  duty: "支援",
+  autoLaunch: false,
 };
 
 export const SKIN_TONE_COLORS: Record<SkinTone, string> = {

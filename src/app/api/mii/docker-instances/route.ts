@@ -12,11 +12,21 @@
 import { NextResponse } from "next/server";
 import { readFileSync, existsSync } from "fs";
 import type { DockerInstance } from "@/lib/mii-types";
+import { readCharacters } from "@/lib/mii-storage";
+import { getPrimaryBinding, getCharacterBindings } from "@/lib/mii-utils";
 
 export const dynamic = "force-dynamic";
 
+interface LiveStatusPayload {
+  agents?: Array<{
+    id: string;
+    status?: string;
+  }>;
+}
+
 export async function GET() {
   const instances: DockerInstance[] = [];
+  const characters = readCharacters();
 
   // ── Read from openclaw.json (same as /api/agents) ─────────────────────────
   try {
@@ -26,6 +36,15 @@ export async function GET() {
       const config = JSON.parse(readFileSync(configPath, "utf-8"));
       for (const agent of config?.agents?.list ?? []) {
         const agentId: string = agent.id;
+        const assignedCharacter = characters.find(
+          (character) => getPrimaryBinding(character)?.instanceId === agentId
+        );
+        const assignedDuty =
+          assignedCharacter &&
+          getCharacterBindings(assignedCharacter).find(
+            (binding) => binding.instanceId === agentId
+          )?.duty;
+
         instances.push({
           id: agentId,
           name: agent.name || agentId,
@@ -34,6 +53,17 @@ export async function GET() {
           model: agent.model?.primary || config?.agents?.defaults?.model?.primary,
           emoji: agent?.ui?.emoji || "🤖",
           color: agent?.ui?.color || "#666666",
+          runtime:
+            agent?.runtime === "docker" || agent?.docker
+              ? "docker"
+              : "openclaw",
+          containerName:
+            agent?.docker?.containerName || agent?.containerName || `openclaw-${agentId}`,
+          composeService: agent?.docker?.service || agent?.composeService,
+          image: agent?.docker?.image || agent?.image,
+          assignedCharacterId: assignedCharacter?.id,
+          assignedCharacterName: assignedCharacter?.name,
+          assignedDuty,
         });
       }
     }
@@ -52,10 +82,10 @@ export async function GET() {
     });
     clearTimeout(timeout);
     if (res.ok) {
-      const data = await res.json();
+      const data = (await res.json()) as LiveStatusPayload;
       // Merge live status into our instances list
       for (const inst of instances) {
-        const live = data?.agents?.find((a: any) => a.id === inst.id);
+        const live = data?.agents?.find((agent) => agent.id === inst.id);
         if (live) {
           inst.status = live.status === "running" ? "running" : "stopped";
         }

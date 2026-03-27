@@ -1,128 +1,101 @@
-# TenacitOS — Mission Control
+# TenacitOS 任务总控台
 
-A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI agent instances. Built with Next.js, React 19, and Tailwind CSS v4.
+TenacitOS 是一个面向 [OpenClaw](https://openclaw.ai) 的实时控制台与可视化工作台。项目基于 Next.js、React 19 和 Tailwind CSS v4 构建，直接读取宿主机上的 OpenClaw 配置、工作区、会话、日志与状态数据。
 
-> **TenacitOS** lives inside your OpenClaw workspace and reads its configuration, agents, sessions, memory, and logs directly from the host. No extra database or backend required — OpenClaw is the backend.
-
----
-
-## Features
-
-- **📊 System Monitor** — Real-time VPS metrics (CPU, RAM, Disk, Network) + PM2/Docker status
-- **🤖 Agent Dashboard** — All agents, their sessions, token usage, model, and activity status
-- **💰 Cost Tracking** — Real cost analytics from OpenClaw sessions (SQLite)
-- **⏰ Cron Manager** — Visual cron manager with weekly timeline, run history, and manual triggers
-- **📋 Activity Feed** — Real-time log of agent actions with heatmap and charts
-- **🧠 Memory Browser** — Explore, search, and edit agent memory files
-- **📁 File Browser** — Navigate workspace files with preview and in-browser editing
-- **🔎 Global Search** — Full-text search across memory and workspace files
-- **🔔 Notifications** — Real-time notification center with unread badge
-- **🏢 Office 3D** — Interactive 3D office with one desk per agent (React Three Fiber)
-- **📺 Terminal** — Read-only terminal for safe status commands
-- **🔐 Auth** — Password-protected with rate limiting and secure cookie
+当前版本已经加入一套更完整的 Mii 风格角色系统，可将角色与多个 openclaw Docker 实例进行绑定，并在界面中展示主控实例、协作实例和实时状态。
 
 ---
 
-## Screenshots
+## 功能概览
 
-**Dashboard** — activity overview, agent status, and weather widget
-
-![Dashboard](./docs/screenshots/dashboard.jpg)
-
-**Session History** — all OpenClaw sessions with token usage and context tracking
-
-![Sessions](./docs/screenshots/sessions.jpg)
-
-**Costs & Analytics** — daily cost trends and breakdown per agent
-
-![Costs](./docs/screenshots/costs.jpg)
-
-**System Monitor** — real-time CPU, RAM, Disk, and Network metrics
-
-![System Monitor](./docs/screenshots/system.jpg)
-
-**Office 3D** — interactive 3D office with one voxel avatar per agent (React Three Fiber)
-
-![Office 3D](./docs/screenshots/office3d.jpg)
+- 系统监控：查看 CPU、内存、磁盘、网络与服务状态
+- Agent 看板：自动发现 OpenClaw agent，展示模型、工作区、活跃状态
+- 会话与成本：读取会话历史、消耗与统计信息
+- Cron 管理：查看定时任务、时间线、历史记录与手动触发
+- 活动流：追踪 agent 的动作与日志事件
+- Memory 浏览：浏览、搜索和编辑工作区内记忆文件
+- 文件管理：工作区文件树、预览与在线编辑
+- 3D 办公室：通过 3D 场景展示 agent 工位
+- Mii 角色系统：
+  - Mii 风格角色定制
+  - 角色能力值与性格标签
+  - 主实例与多职责实例绑定
+  - openclaw Docker / 实例实时状态联动
+  - 实例分配看板
 
 ---
 
-## Requirements
+## 项目结构
 
-- **Node.js** 18+ (tested with v22)
-- **[OpenClaw](https://openclaw.ai)** installed and running on the same host
-- **PM2** or **systemd** (recommended for production)
-- **Caddy** or another reverse proxy (for HTTPS in production)
+TenacitOS 默认运行在 OpenClaw 工作区内，并直接读取如下目录：
 
----
-
-## How it works
-
-TenacitOS reads directly from your OpenClaw installation:
-
-```
-/root/.openclaw/              ← OPENCLAW_DIR (configurable)
-├── openclaw.json             ← agents list, channels, models config
-├── workspace/                ← main agent workspace (MEMORY.md, SOUL.md, etc.)
-├── workspace-studio/         ← sub-agent workspaces
+```text
+/root/.openclaw/              ← OPENCLAW_DIR（可配置）
+├── openclaw.json             ← agents、模型、channel、运行配置
+├── workspace/                ← 主工作区
+├── workspace-studio/         ← 子实例工作区
 ├── workspace-infra/
-├── ...
-└── workspace/mission-control/ ← TenacitOS lives here
+└── workspace/mission-control ← TenacitOS 项目目录
 ```
 
-The app uses `OPENCLAW_DIR` to locate `openclaw.json` and all workspaces. **No manual agent configuration needed** — agents are auto-discovered from `openclaw.json`.
+应用通过 `OPENCLAW_DIR` 自动定位 `openclaw.json` 与各实例工作区，不需要在 TenacitOS 内手工重复配置 agent。
 
 ---
 
-## Installation
+## 环境要求
 
-### 1. Clone into your OpenClaw workspace
+- Node.js 18 及以上
+- npm 10 及以上
+- OpenClaw 已安装并运行在同一台主机
+- 建议配合 PM2 或 systemd 做生产部署
+- 生产环境建议配合 Caddy 或 Nginx 做反向代理
+
+---
+
+## 安装步骤
+
+### 1. 克隆项目
 
 ```bash
-cd /root/.openclaw/workspace   # or your OPENCLAW_DIR/workspace
+cd /root/.openclaw/workspace
 git clone https://github.com/carlosazaustre/tenacitOS.git mission-control
 cd mission-control
+```
+
+### 2. 安装依赖
+
+```bash
 npm install
 ```
 
-### 2. Configure environment
+### 3. 配置环境变量
 
 ```bash
 cp .env.example .env.local
 ```
 
-Edit `.env.local`:
+编辑 `.env.local`：
 
 ```env
-# --- Auth (required) ---
-# Strong password to log in to the dashboard
-ADMIN_PASSWORD=your-secure-password-here
+# 登录密码
+ADMIN_PASSWORD=your-secure-password
 
-# Random secret used to sign the auth cookie
-# Generate with: openssl rand -base64 32
-AUTH_SECRET=your-random-32-char-secret-here
+# Cookie 签名密钥
+AUTH_SECRET=your-random-secret
 
-# --- OpenClaw paths (optional — defaults work for standard installs) ---
+# OpenClaw 根目录，默认是 /root/.openclaw
 # OPENCLAW_DIR=/root/.openclaw
 
-# --- Branding (customize for your instance) ---
+# 品牌配置
 NEXT_PUBLIC_AGENT_NAME=Mission Control
 NEXT_PUBLIC_AGENT_EMOJI=🤖
 NEXT_PUBLIC_AGENT_DESCRIPTION=Your AI co-pilot, powered by OpenClaw
-NEXT_PUBLIC_AGENT_LOCATION=             # e.g. "Madrid, Spain"
-NEXT_PUBLIC_BIRTH_DATE=                 # ISO date, e.g. "2026-01-01"
-NEXT_PUBLIC_AGENT_AVATAR=               # path to image in /public, e.g. "/avatar.jpg"
-
 NEXT_PUBLIC_OWNER_USERNAME=your-username
-NEXT_PUBLIC_OWNER_EMAIL=your-email@example.com
-NEXT_PUBLIC_TWITTER_HANDLE=@username
-NEXT_PUBLIC_COMPANY_NAME=MISSION CONTROL, INC.
+NEXT_PUBLIC_OWNER_EMAIL=you@example.com
 NEXT_PUBLIC_APP_TITLE=Mission Control
 ```
 
-> **Tip:** `OPENCLAW_DIR` defaults to `/root/.openclaw`. If your OpenClaw is installed elsewhere, set this variable.
-
-### 3. Initialize data files
+### 4. 初始化示例数据
 
 ```bash
 cp data/cron-jobs.example.json data/cron-jobs.json
@@ -132,51 +105,107 @@ cp data/configured-skills.example.json data/configured-skills.json
 cp data/tasks.example.json data/tasks.json
 ```
 
-### 4. Generate secrets
+如果你准备使用 Mii 角色系统，也可以让应用在首次保存角色时自动生成：
 
-```bash
-# Auth secret
-openssl rand -base64 32
-
-# Password (or use a password manager)
-openssl rand -base64 18
+```text
+data/mii-characters.json
 ```
 
-### 5. Run
+### 5. 启动开发环境
 
 ```bash
-# Development
 npm run dev
-# → http://localhost:3000
-
-# Production build
-npm run build
-npm start
 ```
 
-Login at `http://localhost:3000` with the `ADMIN_PASSWORD` you set.
+默认访问地址：
+
+```text
+http://localhost:3000
+```
 
 ---
 
-## Production Deployment
+## Mii 角色系统说明
 
-### PM2 (recommended)
+`/mii` 页面用于管理角色与实例绑定。当前实现支持：
+
+- 自定义脸型、发型、眼睛、服装、配件与能力值
+- 为角色绑定一个主控实例
+- 为同一角色追加多个协作实例
+- 为每个协作实例指定职责，例如开发、测试、部署、监控、研究、支援
+- 从 `openclaw.json` 自动发现实例
+- 从控制平面实时读取实例状态
+- 在角色大厅和实例看板中同步显示绑定关系
+
+### 数据模型
+
+角色数据保存在：
+
+```text
+data/mii-characters.json
+```
+
+新模型支持：
+
+- `primaryInstanceId`：主控实例 ID
+- `instanceBindings[]`：多实例职责绑定
+- `dockerInstanceId`：旧字段，保留兼容
+
+旧版只有 `dockerInstanceId` 的数据会在读取时自动兼容迁移。
+
+---
+
+## openclaw Docker / 多实例适配
+
+接口 `/api/mii/docker-instances` 会读取 `openclaw.json` 中的 agent 列表，并为前端补充：
+
+- 实例名称
+- 运行状态
+- 模型信息
+- 工作区路径
+- 容器名 / compose service / image（若配置中存在）
+- 已分配的角色名称与职责
+
+如果本机存在 openclaw 控制平面，前端会通过 REST 轮询与 WebSocket 消息同步实例运行状态。
+
+---
+
+## 常用命令
+
+```bash
+# 开发
+npm run dev
+
+# 生产构建
+npm run build
+
+# 生产启动
+npm start
+
+# 代码检查
+npm run lint
+```
+
+---
+
+## 生产部署
+
+### 使用 PM2
 
 ```bash
 npm run build
-
 pm2 start npm --name "mission-control" -- start
 pm2 save
-pm2 startup   # enable auto-restart on reboot
+pm2 startup
 ```
 
-### systemd
+### 使用 systemd
 
-Create `/etc/systemd/system/mission-control.service`:
+创建 `/etc/systemd/system/mission-control.service`：
 
 ```ini
 [Unit]
-Description=TenacitOS — OpenClaw Mission Control
+Description=TenacitOS Mission Control
 After=network.target
 
 [Service]
@@ -192,13 +221,19 @@ Environment=NODE_ENV=production
 WantedBy=multi-user.target
 ```
 
+然后执行：
+
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable mission-control
 sudo systemctl start mission-control
 ```
 
-### Reverse proxy — Caddy (HTTPS)
+---
+
+## 反向代理示例
+
+### Caddy
 
 ```caddy
 mission-control.yourdomain.com {
@@ -206,203 +241,27 @@ mission-control.yourdomain.com {
 }
 ```
 
-> When behind HTTPS, `secure: true` is set automatically on the auth cookie.
+---
+
+## 开发说明
+
+- `src/app/api/mii/route.ts`：Mii 角色 CRUD
+- `src/app/api/mii/docker-instances/route.ts`：读取 openclaw 实例并映射为角色绑定数据
+- `src/components/mii/MiiEditor.tsx`：Mii 风格角色编辑器
+- `src/components/mii/MiiHall.tsx`：角色大厅与实例分配看板
+- `src/hooks/useDockerInstances.ts`：前端轮询与 WebSocket 状态同步
+- `src/lib/mii-utils.ts`：角色归一化、兼容迁移与主实例绑定辅助逻辑
 
 ---
 
-## Configuration
+## 注意事项
 
-### Agent branding
-
-All personal data stays in `.env.local` (gitignored). The `src/config/branding.ts` file reads from env vars — **never edit it directly** with your personal data.
-
-### Agent discovery
-
-Agents are auto-discovered from `openclaw.json` at startup. The `/api/agents` endpoint reads:
-
-```json
-{
-  "agents": {
-    "list": [
-      { "id": "main", "name": "...", "workspace": "...", "model": {...} },
-      { "id": "studio", "name": "...", "workspace": "..." }
-    ]
-  }
-}
-```
-
-Each agent can define its own visual appearance in `openclaw.json`:
-
-```json
-{
-  "id": "studio",
-  "name": "My Studio Agent",
-  "ui": {
-    "emoji": "🎬",
-    "color": "#E91E63"
-  }
-}
-```
-
-### Office 3D — agent positions
-
-The 3D office has default positions for up to 6 agents. To customize positions, names, and colors for your own agents, edit `src/components/Office3D/agentsConfig.ts`:
-
-```ts
-export const AGENTS: AgentConfig[] = [
-  {
-    id: "main",       // must match workspace ID
-    name: "...",      // display name (can also come from API)
-    emoji: "🤖",
-    position: [0, 0, 0],
-    color: "#FFCC00",
-    role: "Main Agent",
-  },
-  // add your sub-agents here
-];
-```
-
-### 3D Avatar models
-
-To add custom 3D avatars (Ready Player Me GLB format), place them in `public/models/`:
-
-```
-public/models/
-├── main.glb        ← main agent avatar
-├── studio.glb      ← workspace-studio agent
-└── infra.glb       ← workspace-infra agent
-```
-
-Filename must match the agent `id`. If no file is found, a colored sphere is shown as fallback.  
-See `public/models/README.md` for full instructions.
-
-### Cost tracking
-
-Usage is collected from OpenClaw's SQLite databases via a script:
-
-```bash
-# Collect once
-npx tsx scripts/collect-usage.ts
-
-# Auto-collect every hour (adds a cron job)
-./scripts/setup-cron.sh
-```
-
-See [docs/COST-TRACKING.md](./docs/COST-TRACKING.md) for details.
+- 当前仓库本身已经存在若干历史 lint 问题，与本次 Mii 改造无直接关系
+- 若 `npm install` 网络不稳定，可能导致 `next build` 或 `npm run lint` 在依赖未完整落盘前失败
+- 若你的 OpenClaw 安装路径不是 `/root/.openclaw`，请务必设置 `OPENCLAW_DIR`
 
 ---
 
-## Project Structure
+## 许可证
 
-```
-mission-control/
-├── src/
-│   ├── app/
-│   │   ├── (dashboard)/      # Dashboard pages (protected)
-│   │   ├── api/              # API routes
-│   │   ├── login/            # Login page
-│   │   └── office/           # 3D office (unprotected route)
-│   ├── components/
-│   │   ├── TenacitOS/        # OS-style UI shell (topbar, dock, status bar)
-│   │   └── Office3D/         # React Three Fiber 3D office
-│   ├── config/
-│   │   └── branding.ts       # Branding constants (reads from env vars)
-│   └── lib/                  # Utilities (pricing, queries, activity logger...)
-├── data/                     # JSON data files (gitignored — use .example versions)
-├── docs/                     # Extended documentation
-├── public/
-│   └── models/               # GLB avatar models (add your own)
-├── scripts/                  # Setup and data collection scripts
-├── .env.example              # Environment variable template
-└── middleware.ts             # Auth guard for all routes
-```
-
----
-
-## Security
-
-- All routes (including all `/api/*`) require authentication — handled by `src/middleware.ts`
-- `/api/auth/login` and `/api/health` are the only public endpoints
-- Login is rate-limited: **5 failed attempts → 15-minute lockout** per IP
-- Auth cookie is `httpOnly`, `sameSite: lax`, and `secure` in production
-- Terminal API uses a strict command allowlist — `env`, `curl`, `wget`, `node`, `python` are blocked
-- **Never commit `.env.local`** — it contains your credentials
-
-Generate fresh secrets:
-
-```bash
-openssl rand -base64 32   # AUTH_SECRET
-openssl rand -base64 18   # ADMIN_PASSWORD
-```
-
----
-
-## Troubleshooting
-
-**"Gateway not reachable" / agent data missing**
-
-```bash
-openclaw status
-openclaw gateway start   # if not running
-```
-
-**"Database not found" (cost tracking)**
-
-```bash
-npx tsx scripts/collect-usage.ts
-```
-
-**Build errors after pulling updates**
-
-```bash
-rm -rf .next node_modules
-npm install
-npm run build
-```
-
-**Scripts not executable**
-
-```bash
-chmod +x scripts/*.sh
-```
-
----
-
-## Tech Stack
-
-| Layer | Tech |
-|---|---|
-| Framework | Next.js 15 (App Router) |
-| UI | React 19 + Tailwind CSS v4 |
-| 3D | React Three Fiber + Drei |
-| Charts | Recharts |
-| Icons | Lucide React |
-| Database | SQLite (better-sqlite3) |
-| Runtime | Node.js 22 |
-
----
-
-## Contributing
-
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feat/my-feature`)
-3. **Keep personal data out of commits** — use `.env.local` and `data/` (both gitignored)
-4. Write clear commit messages
-5. Open a PR
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
-
----
-
-## License
-
-MIT — see [LICENSE](./LICENSE)
-
----
-
-## Links
-
-- [OpenClaw](https://openclaw.ai) — the AI agent runtime this dashboard is built for
-- [OpenClaw Docs](https://docs.openclaw.ai)
-- [Discord Community](https://discord.com/invite/clawd)
-- [GitHub Issues](../../issues) — bug reports and feature requests
+本项目使用仓库内的 `LICENSE` 许可证文件。
