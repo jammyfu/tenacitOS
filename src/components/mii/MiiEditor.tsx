@@ -32,6 +32,8 @@ import {
   DEFAULT_STATS,
   EYE_COLOR_VALUES,
   HAIR_COLOR_VALUES,
+  PERSONALITY_COLORS,
+  ROLE_ICONS,
   SKIN_TONE_COLORS,
 } from "@/lib/mii-types";
 import { normalizeCharacter } from "@/lib/mii-utils";
@@ -96,6 +98,9 @@ const PERSONALITIES: Personality[] = [
   "独立",
   "协作",
   "创意",
+  "精准",
+  "领导力",
+  "团队协作",
 ];
 const ROLES: CharacterRole[] = [
   "工程师",
@@ -108,6 +113,7 @@ const ROLES: CharacterRole[] = [
   "研究员",
   "测试员",
   "部署员",
+  "探索者",
 ];
 const DUTIES: BindingDuty[] = ["主控", "开发", "测试", "部署", "监控", "研究", "支援"];
 const SHIRT_COLORS = [
@@ -560,7 +566,7 @@ export function MiiEditor({
               >
                 {ROLES.map((item) => (
                   <option key={item} value={item}>
-                    {item}
+                    {ROLE_ICONS[item] ?? ""} {item}
                   </option>
                 ))}
               </select>
@@ -627,21 +633,27 @@ export function MiiEditor({
             当前编组
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {personalities.map((item) => (
-              <span
-                key={item}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                  backgroundColor: "var(--surface-elevated)",
-                  border: "1px solid var(--border)",
-                  fontSize: 12,
-                  color: "var(--text-secondary)",
-                }}
-              >
-                {item}
-              </span>
-            ))}
+            {personalities.map((item) => {
+              const color = PERSONALITY_COLORS[item as keyof typeof PERSONALITY_COLORS] ?? "#6366f1";
+              return (
+                <span
+                  key={item}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    backgroundColor: color + "22",
+                    border: `1px solid ${color}55`,
+                    fontSize: 12,
+                    color,
+                  }}
+                >
+                  {item}
+                </span>
+              );
+            })}
+            {personalities.length === 0 && (
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>未选择性格</span>
+            )}
           </div>
           <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
             主实例: {primaryInstanceId || "未绑定"} · 协作实例:{" "}
@@ -654,25 +666,35 @@ export function MiiEditor({
         <Section title="角色性格与能力">
           <Field label="性格标签（最多 3 个）">
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {PERSONALITIES.map((trait) => (
-                <button
-                  key={trait}
-                  type="button"
-                  onClick={() => togglePersonality(trait)}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: 999,
-                    border: `1px solid ${personalities.includes(trait) ? "var(--accent)" : "var(--border)"}`,
-                    backgroundColor:
-                      personalities.includes(trait) ? "var(--accent)" : "var(--surface-elevated)",
-                    color: personalities.includes(trait) ? "#fff" : "var(--text-secondary)",
-                    cursor: "pointer",
-                    fontSize: 12,
-                  }}
-                >
-                  {trait}
-                </button>
-              ))}
+              {PERSONALITIES.map((trait) => {
+                const isSelected = personalities.includes(trait);
+                const color = PERSONALITY_COLORS[trait as keyof typeof PERSONALITY_COLORS] ?? "#6366f1";
+                const disabled = !isSelected && personalities.length >= 3;
+                return (
+                  <button
+                    key={trait}
+                    type="button"
+                    onClick={() => togglePersonality(trait)}
+                    disabled={disabled}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: 999,
+                      border: `1px solid ${isSelected ? color : "var(--border)"}`,
+                      backgroundColor: isSelected ? color + "33" : "var(--surface-elevated)",
+                      color: isSelected ? color : disabled ? "var(--text-muted)" : "var(--text-secondary)",
+                      cursor: disabled ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      opacity: disabled ? 0.5 : 1,
+                      fontWeight: isSelected ? 700 : 400,
+                    }}
+                  >
+                    {trait}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+              已选 {personalities.length}/3
             </div>
           </Field>
           <StatSlider

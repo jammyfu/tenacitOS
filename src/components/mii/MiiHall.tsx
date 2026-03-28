@@ -9,6 +9,7 @@ import { Download, Edit3, GripVertical, Link, Share2, Trash2, Unlink, Upload } f
 import { MiiAvatar } from "./MiiAvatar";
 import { MiiShareCard } from "./MiiShareCard";
 import type { DockerInstance, MiiCharacter } from "@/lib/mii-types";
+import { PERSONALITY_COLORS, ROLE_ICONS } from "@/lib/mii-types";
 import { getCharacterBindings, getPrimaryBinding } from "@/lib/mii-utils";
 
 const STATUS_COLORS: Record<MiiCharacter["status"], string> = {
@@ -192,8 +193,9 @@ function CharacterCard({
               >
                 {character.name}
               </div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-                {character.role}
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
+                <span>{ROLE_ICONS[character.role] ?? "🤖"}</span>
+                <span>{character.role}</span>
               </div>
             </div>
 
@@ -224,21 +226,24 @@ function CharacterCard({
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
-            {character.personality.map((trait) => (
-              <span
-                key={trait}
-                style={{
-                  padding: "3px 8px",
-                  borderRadius: 999,
-                  fontSize: 11,
-                  color: "var(--text-secondary)",
-                  backgroundColor: "var(--surface-elevated)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                {trait}
-              </span>
-            ))}
+            {character.personality.map((trait) => {
+              const color = PERSONALITY_COLORS[trait as keyof typeof PERSONALITY_COLORS] ?? "#6366f1";
+              return (
+                <span
+                  key={trait}
+                  style={{
+                    padding: "3px 8px",
+                    borderRadius: 999,
+                    fontSize: 11,
+                    color,
+                    backgroundColor: color + "20",
+                    border: `1px solid ${color}55`,
+                  }}
+                >
+                  {trait}
+                </span>
+              );
+            })}
           </div>
         </div>
       </div>

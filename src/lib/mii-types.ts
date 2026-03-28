@@ -137,7 +137,10 @@ export type Personality =
   | "友善"
   | "独立"
   | "协作"
-  | "创意";
+  | "创意"
+  | "精准"
+  | "领导力"
+  | "团队协作";
 
 export type CharacterRole =
   | "工程师"
@@ -149,7 +152,8 @@ export type CharacterRole =
   | "协调员"
   | "研究员"
   | "测试员"
-  | "部署员";
+  | "部署员"
+  | "探索者";
 
 // ─── Character Status ─────────────────────────────────────────────────────────
 
@@ -262,6 +266,36 @@ export const HAIR_COLOR_VALUES: Record<HairColor, string> = {
   "purple": "#8E44AD",
   "pink": "#E91E8C",
   "green": "#27AE60",
+};
+
+export const ROLE_ICONS: Record<CharacterRole, string> = {
+  工程师: "🔧",
+  指挥官: "🎯",
+  侦察员: "👁",
+  守卫: "🛡",
+  设计师: "🎨",
+  分析师: "📊",
+  探索者: "🚀",
+  协调员: "🔗",
+  研究员: "🔬",
+  测试员: "🧪",
+  部署员: "🚢",
+};
+
+export const PERSONALITY_COLORS: Record<Personality, string> = {
+  严肃: "#6366f1",
+  活泼: "#f59e0b",
+  冷静: "#06b6d4",
+  热情: "#ef4444",
+  谨慎: "#8b5cf6",
+  大胆: "#f97316",
+  友善: "#10b981",
+  独立: "#3b82f6",
+  协作: "#14b8a6",
+  创意: "#ec4899",
+  精准: "#64748b",
+  领导力: "#e11d48",
+  团队协作: "#0ea5e9",
 };
 
 export const EYE_COLOR_VALUES: Record<EyeColor, string> = {
