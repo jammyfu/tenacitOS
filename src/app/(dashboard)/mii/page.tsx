@@ -9,7 +9,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
-import { Download, Plus, Smile, Swords, Upload, Users, Joystick } from "lucide-react";
+import { Check, Download, Plus, RefreshCw, Smile, Swords, Upload, Users, Joystick } from "lucide-react";
 import { MiiHall } from "@/components/mii/MiiHall";
 import { MiiEditor } from "@/components/mii/MiiEditor";
 import { useDockerInstances } from "@/hooks/useDockerInstances";
@@ -31,7 +31,26 @@ export default function MiiPage() {
   const [editingCharacter, setEditingCharacter] = useState<MiiCharacter | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [syncing, setSyncing] = useState(false);
+  const [syncDone, setSyncDone] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSyncToOpenclaw = async () => {
+    setSyncing(true);
+    setSyncDone(false);
+    try {
+      const res = await fetch("/api/mii/export", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setSyncDone(true);
+        setTimeout(() => setSyncDone(false), 3000);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSyncing(false);
+    }
+  };
   const { instances, loading: instancesLoading } = useDockerInstances();
 
   // ── Fetch characters ──────────────────────────────────────────────────────
@@ -265,6 +284,25 @@ export default function MiiPage() {
             <button type="button" onClick={handleExport} style={toolbarSecondaryStyle}>
               <Download size={14} />
               导出 JSON
+            </button>
+            <button
+              type="button"
+              onClick={handleSyncToOpenclaw}
+              disabled={syncing}
+              style={{
+                ...toolbarSecondaryStyle,
+                color: syncDone ? "var(--positive)" : syncing ? "var(--text-muted)" : "var(--text-secondary)",
+                cursor: syncing ? "not-allowed" : "pointer",
+              }}
+            >
+              {syncing ? (
+                <RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} />
+              ) : syncDone ? (
+                <Check size={14} />
+              ) : (
+                <RefreshCw size={14} />
+              )}
+              {syncDone ? "已同步!" : "同步到 OpenClaw"}
             </button>
             <button
               type="button"
