@@ -545,6 +545,32 @@ export function MiiHall({
   onBindDocker,
   onImport,
 }: MiiHallProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [groupByRole, setGroupByRole] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return characters;
+    return characters.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.role.toLowerCase().includes(q) ||
+        c.personality.some((p) => p.toLowerCase().includes(q)) ||
+        (c.description?.toLowerCase().includes(q) ?? false)
+    );
+  }, [characters, searchQuery]);
+
+  const grouped = useMemo(() => {
+    if (!groupByRole) return null;
+    const map = new Map<string, MiiCharacter[]>();
+    for (const c of filtered) {
+      const key = c.role;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(c);
+    }
+    return map;
+  }, [filtered, groupByRole]);
+
   const handleExport = () => {
     const json = JSON.stringify(characters, null, 2);
     const blob = new Blob([json], { type: "application/json" });
@@ -602,14 +628,42 @@ export function MiiHall({
           justifyContent: "space-between",
           alignItems: "center",
           gap: 12,
-          marginBottom: 20,
+          marginBottom: 16,
           flexWrap: "wrap",
         }}
       >
         <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-          {characters.length} 个角色 · {characters.filter((item) => getPrimaryBinding(item)).length} 个已绑定主实例
+          {filtered.length}/{characters.length} 个角色 · {characters.filter((item) => getPrimaryBinding(item)).length} 个已绑定主实例
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="text"
+            placeholder="搜索角色名/职责/性格…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 10,
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--surface-elevated)",
+              color: "var(--text-primary)",
+              fontSize: 12,
+              width: 200,
+              outline: "none",
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setGroupByRole((v) => !v)}
+            style={{
+              ...ghostButtonStyle,
+              backgroundColor: groupByRole ? "var(--accent)" : "var(--surface-elevated)",
+              color: groupByRole ? "#fff" : "var(--text-secondary)",
+              borderColor: groupByRole ? "var(--accent)" : "var(--border)",
+            }}
+          >
+            按职责分组
+          </button>
           <label style={ghostButtonStyle}>
             <Upload size={13} />
             导入
@@ -622,24 +676,69 @@ export function MiiHall({
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-          gap: 18,
-        }}
-      >
-        {characters.map((character) => (
-          <CharacterCard
-            key={character.id}
-            character={character}
-            dockerInstances={dockerInstances}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onBindDocker={onBindDocker}
-          />
-        ))}
-      </div>
+      {filtered.length === 0 && searchQuery && (
+        <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "48px 0", fontSize: 13 }}>
+          没有匹配「{searchQuery}」的角色
+        </div>
+      )}
+
+      {grouped
+        ? Array.from(grouped.entries()).map(([role, group]) => (
+            <div key={role} style={{ marginBottom: 28 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  color: "var(--text-muted)",
+                  marginBottom: 12,
+                  paddingLeft: 4,
+                }}
+              >
+                {role} ({group.length})
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                  gap: 18,
+                }}
+              >
+                {group.map((character) => (
+                  <CharacterCard
+                    key={character.id}
+                    character={character}
+                    dockerInstances={dockerInstances}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onBindDocker={onBindDocker}
+                  />
+                ))}
+              </div>
+            </div>
+          ))
+        : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: 18,
+            }}
+          >
+            {filtered.map((character) => (
+              <CharacterCard
+                key={character.id}
+                character={character}
+                dockerInstances={dockerInstances}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onBindDocker={onBindDocker}
+              />
+            ))}
+          </div>
+        )
+      }
 
       {dockerInstances.length > 0 && (
         <InstanceRoster dockerInstances={dockerInstances} characters={characters} />
