@@ -174,6 +174,8 @@ export interface MiiCharacter {
   description: string;
   /** Short catchphrase shown as a speech bubble on the character card */
   catchphrase?: string;
+  /** AI-generated or manually written backstory */
+  backstory?: string;
   /** Legacy single-binding field kept for backward compatibility. */
   dockerInstanceId?: string;
   /** Primary openclaw Docker instance bound to this role. */

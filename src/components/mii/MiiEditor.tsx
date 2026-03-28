@@ -5,7 +5,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { WandSparkles } from "lucide-react";
+import { BookOpen, Loader2, WandSparkles } from "lucide-react";
 import { MiiAvatar } from "./MiiAvatar";
 import { MiiRadarChart } from "./MiiRadarChart";
 import type {
@@ -336,6 +336,25 @@ export function MiiEditor({
     normalized.instanceBindings ?? []
   );
   const [catchphrase, setCatchphrase] = useState(normalized.catchphrase ?? "");
+  const [backstory, setBackstory] = useState(normalized.backstory ?? "");
+  const [generatingBackstory, setGeneratingBackstory] = useState(false);
+
+  const generateBackstory = async () => {
+    setGeneratingBackstory(true);
+    try {
+      const res = await fetch("/api/mii/generate-backstory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, role, personality: personalities, stats, description }),
+      });
+      const data = await res.json();
+      if (data.backstory) setBackstory(data.backstory);
+    } catch {
+      // ignore
+    } finally {
+      setGeneratingBackstory(false);
+    }
+  };
 
   const setApp = (patch: Partial<MiiAppearance>) =>
     setAppearance((current) => ({ ...current, ...patch }));
@@ -463,6 +482,7 @@ export function MiiEditor({
         avatar: appearance,
         status,
         catchphrase: catchphrase.trim() || undefined,
+        backstory: backstory.trim() || undefined,
         primaryInstanceId: primaryInstanceId || undefined,
         dockerInstanceId: primaryInstanceId || undefined,
         instanceBindings: nextBindings,
@@ -615,6 +635,46 @@ export function MiiEditor({
                 maxLength={40}
                 style={inputStyle(true)}
               />
+            </Field>
+
+            <Field label="📖 背景故事">
+              <div style={{ position: "relative" }}>
+                <textarea
+                  rows={5}
+                  value={backstory}
+                  onChange={(e) => setBackstory(e.target.value)}
+                  placeholder="角色的背景故事，可手动填写或点击下方按钮自动生成…"
+                  style={{ ...inputStyle(true), resize: "vertical", minHeight: 110, paddingBottom: 44 }}
+                />
+                <button
+                  type="button"
+                  onClick={generateBackstory}
+                  disabled={generatingBackstory}
+                  style={{
+                    position: "absolute",
+                    bottom: 8,
+                    right: 8,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "5px 12px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                    backgroundColor: "var(--surface-elevated)",
+                    color: generatingBackstory ? "var(--text-muted)" : "var(--accent)",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: generatingBackstory ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {generatingBackstory ? (
+                    <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                  ) : (
+                    <BookOpen size={12} />
+                  )}
+                  {generatingBackstory ? "生成中…" : "AI 生成故事"}
+                </button>
+              </div>
             </Field>
           </div>
         </div>

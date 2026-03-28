@@ -92,6 +92,8 @@ export function normalizeCharacter(input: Partial<MiiCharacter>): MiiCharacter {
       ...(input.stats || {}),
     },
     status: input.status || "offline",
+    ...(input.backstory !== undefined ? { backstory: input.backstory } : {}),
+    ...(input.catchphrase !== undefined ? { catchphrase: input.catchphrase } : {}),
     createdAt: input.createdAt || now,
     updatedAt: input.updatedAt || now,
   };
