@@ -9,7 +9,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
-import { Download, Plus, Smile, Upload, Joystick } from "lucide-react";
+import { Download, Plus, Smile, Swords, Upload, Users, Joystick } from "lucide-react";
 import { MiiHall } from "@/components/mii/MiiHall";
 import { MiiEditor } from "@/components/mii/MiiEditor";
 import { useDockerInstances } from "@/hooks/useDockerInstances";
@@ -238,6 +238,14 @@ export default function MiiPage() {
             <Link href="/mii/arcade" style={{ ...toolbarSecondaryStyle, textDecoration: "none" }}>
               <Joystick size={14} />
               Arcade 指挥舱
+            </Link>
+            <Link href="/mii/battle" style={{ ...toolbarSecondaryStyle, textDecoration: "none" }}>
+              <Swords size={14} />
+              对战模拟
+            </Link>
+            <Link href="/mii/team" style={{ ...toolbarSecondaryStyle, textDecoration: "none" }}>
+              <Users size={14} />
+              团队视图
             </Link>
             <button
               type="button"
