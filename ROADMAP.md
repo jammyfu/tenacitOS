@@ -26,6 +26,10 @@
 - [x] **Step 17**: 丰富外观选项 — 新增 5 种发型（ponytail/pigtails/curly/afro/braids）+ 头盔配件
 - [x] **Step 18**: 拖拽排序 — HTML5 Drag & Drop，PATCH `/api/mii` 批量持久化
 - [x] **Step 19**: 角色页面增强 — 汇总卡片、快速筛选标签（All/Online/Offline/Unbound）、顶部 Toolbar、空状态引导
+- [x] **Step 21**: 角色分享卡片 — Canvas 绘制分享卡（头像+名字+职责+性格+能力条），PNG 下载
+- [x] **Step 22**: Arcade 迷你指挥舱视图 — `/mii/arcade` 路由，深色网格背景，按职责分区工位，呼吸光效，WebSocket 实时
+- [x] **Step 23**: 性格与职责系统增强 — personality 新增精准/领导力/团队协作，role 新增探索者，角色卡彩色 pill，editor 多选含禁用逻辑
+- [x] **Step 24**: 能力值雷达图 — 纯 SVG 六边形雷达图，6 维度（领导力/适应力新增），发色映射填充，卡片切换条形/雷达，编辑器实时预览
 
 ## 进行中
 
@@ -33,11 +37,11 @@
 
 ## 下一阶段规划
 
-- [ ] **Step 21**: 角色分享 — 生成分享链接 / 二维码，可读分享页（无需登录）
-- [ ] **Step 22**: Arcade 迷你指挥舱视图 — Sessions/Agents 页面 Mii 角色卡替换抽象代理单元，实时状态气泡
-- [ ] **Step 23**: 角色 AI 性格描述生成 — 根据性格标签调用 Claude API 自动生成角色简介
-- [ ] **Step 24**: 多语言支持 — 中英文界面切换（`i18n` 或简单 key→label 映射）
-- [ ] **Step 25**: openclaw-control-plane 深度集成 — 双向同步角色配置，状态变更实时反映
+- [ ] **Step 26**: 角色 AI 背景故事生成 — 调用 Claude API，根据性格标签自动生成角色简介
+- [ ] **Step 27**: 角色对战模拟 — 两个角色按 stats 模拟一场任务，显示日志
+- [ ] **Step 28**: Team 视图 — 多个角色组成 Team，显示团队综合能力雷达
+- [ ] **Step 29**: 与 openclaw-control-plane 深度集成 — 共享角色 JSON 配置文件，双向同步
+- [ ] **Step 30**: 角色成就系统 — 完成任务次数、在线时长等积累成就徽章
 
 ---
 
@@ -460,4 +464,4 @@
 ---
 
 *Creado: 2026-02-07*
-*Última actualización: 2026-03-28 (Steps 17-19 complete)*
+*Última actualización: 2026-03-28 (Steps 21-24 complete)*
