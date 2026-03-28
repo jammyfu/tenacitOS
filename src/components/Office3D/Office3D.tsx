@@ -125,7 +125,7 @@ export default function Office3D() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [interactionModal, setInteractionModal] = useState<string | null>(null);
   const [controlMode, setControlMode] = useState<'orbit' | 'fps'>('orbit');
-  const [avatarPositions, setAvatarPositions] = useState<Map<string, Vector3>>(new Map());
+  const [avatarPositions] = useState(() => new Map<string, Vector3>());
   const [apiAgents, setApiAgents] = useState<OfficeApiAgent[]>([]);
   const [officeSource, setOfficeSource] = useState<string>('loading');
   const [officeError, setOfficeError] = useState<string | null>(null);
@@ -196,7 +196,7 @@ export default function Office3D() {
   };
 
   const handleAvatarPositionUpdate = (id: string, position: Vector3) => {
-    setAvatarPositions((prev) => new Map(prev).set(id, position));
+    avatarPositions.set(id, position);
   };
 
   const obstacles = [
