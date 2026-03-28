@@ -1,7 +1,20 @@
 /**
  * AgentRow Component
  * Based on Component/AgentRow from tenacios-design.json
+ *
+ * Optionally renders a MiiAvatarCard instead of the emoji icon
+ * when a bound Mii character is provided via the `miiCharacter` prop.
  */
+
+import { MiiAvatarCard } from "@/components/mii/MiiAvatar";
+import type { MiiCharacter } from "@/lib/mii-types";
+
+const STATUS_COLORS: Record<MiiCharacter["status"], string> = {
+  online: "#32D74B",
+  busy: "#FFD60A",
+  idle: "#0A84FF",
+  offline: "#525252",
+};
 
 interface AgentRowProps {
   emoji: string;
@@ -9,6 +22,8 @@ interface AgentRowProps {
   status: string;
   model: string;
   statusDot?: "positive" | "info" | "warning" | "negative" | "muted";
+  /** If provided, replaces the emoji with the character's Mii avatar */
+  miiCharacter?: MiiCharacter;
 }
 
 export function AgentRow({
@@ -17,6 +32,7 @@ export function AgentRow({
   status,
   model,
   statusDot = "positive",
+  miiCharacter,
 }: AgentRowProps) {
   const dotColorMap = {
     positive: "var(--positive)",
@@ -48,16 +64,24 @@ export function AgentRow({
         }}
       />
 
-      {/* Agent Emoji */}
-      <div
-        style={{
-          fontSize: "18px",
-          lineHeight: "18px",
-          flexShrink: 0,
-        }}
-      >
-        {emoji}
-      </div>
+      {/* Mii Avatar or Emoji */}
+      {miiCharacter ? (
+        <MiiAvatarCard
+          appearance={miiCharacter.avatar}
+          size={32}
+          statusColor={STATUS_COLORS[miiCharacter.status]}
+        />
+      ) : (
+        <div
+          style={{
+            fontSize: "18px",
+            lineHeight: "18px",
+            flexShrink: 0,
+          }}
+        >
+          {emoji}
+        </div>
+      )}
 
       {/* Agent Info */}
       <div
@@ -77,7 +101,7 @@ export function AgentRow({
             color: "var(--text-primary)",
           }}
         >
-          {name}
+          {miiCharacter ? miiCharacter.name : name}
         </div>
         <div
           style={{
@@ -89,7 +113,7 @@ export function AgentRow({
             whiteSpace: "nowrap",
           }}
         >
-          {status}
+          {miiCharacter ? `${miiCharacter.role} · ${status}` : status}
         </div>
       </div>
 

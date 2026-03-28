@@ -14,6 +14,8 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { AgentOrganigrama } from "@/components/AgentOrganigrama";
+import { MiiAvatarCard } from "@/components/mii/MiiAvatar";
+import type { MiiCharacter } from "@/lib/mii-types";
 
 interface Agent {
   id: string;
@@ -36,13 +38,22 @@ interface Agent {
   activeSessions: number;
 }
 
+const MII_STATUS_COLORS: Record<MiiCharacter["status"], string> = {
+  online: "#32D74B",
+  busy: "#FFD60A",
+  idle: "#0A84FF",
+  offline: "#525252",
+};
+
 export default function AgentsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [miiCharacters, setMiiCharacters] = useState<MiiCharacter[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"cards" | "organigrama">("cards");
 
   useEffect(() => {
     fetchAgents();
+    fetchMii();
     const interval = setInterval(fetchAgents, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -58,6 +69,20 @@ export default function AgentsPage() {
       setLoading(false);
     }
   };
+
+  const fetchMii = async () => {
+    try {
+      const res = await fetch("/api/mii");
+      const data = await res.json();
+      setMiiCharacters(data.characters ?? []);
+    } catch {
+      // Mii system optional
+    }
+  };
+
+  /** Find Mii character bound to this agent id */
+  const getMii = (agentId: string) =>
+    miiCharacters.find((c) => c.dockerInstanceId === agentId);
 
   const formatLastActivity = (timestamp?: string) => {
     if (!timestamp) return "Never";
@@ -145,7 +170,9 @@ export default function AgentsPage() {
       {/* Agents Grid */}
       {activeTab === "cards" && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {agents.map((agent) => (
+        {agents.map((agent) => {
+          const mii = getMii(agent.id);
+          return (
           <div
             key={agent.id}
             className="rounded-xl overflow-hidden transition-all hover:scale-[1.02]"
@@ -163,6 +190,29 @@ export default function AgentsPage() {
               }}
             >
               <div className="flex items-center gap-3">
+                {mii ? (
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: "50%",
+                      border: `2px solid ${agent.color}`,
+                      backgroundColor: `${agent.color}10`,
+                      overflow: "hidden",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                    title={`${mii.name} · ${mii.role}`}
+                  >
+                    <MiiAvatarCard
+                      appearance={mii.avatar}
+                      size={52}
+                      statusColor={MII_STATUS_COLORS[mii.status]}
+                    />
+                  </div>
+                ) : (
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
                   style={{
@@ -172,6 +222,7 @@ export default function AgentsPage() {
                 >
                   {agent.emoji}
                 </div>
+                )}
                 <div>
                   <h3
                     className="text-lg font-bold"
@@ -181,6 +232,22 @@ export default function AgentsPage() {
                     }}
                   >
                     {agent.name}
+                    {mii && (
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          fontSize: 11,
+                          fontWeight: 500,
+                          color: "var(--accent)",
+                          backgroundColor: "var(--accent-soft)",
+                          borderRadius: "999px",
+                          padding: "1px 8px",
+                          verticalAlign: "middle",
+                        }}
+                      >
+                        {mii.name} · {mii.role}
+                      </span>
+                    )}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
                     <Circle
@@ -362,7 +429,8 @@ export default function AgentsPage() {
               </div>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
       )}
     </div>
