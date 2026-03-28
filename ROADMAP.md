@@ -30,18 +30,23 @@
 - [x] **Step 22**: Arcade 迷你指挥舱视图 — `/mii/arcade` 路由，深色网格背景，按职责分区工位，呼吸光效，WebSocket 实时
 - [x] **Step 23**: 性格与职责系统增强 — personality 新增精准/领导力/团队协作，role 新增探索者，角色卡彩色 pill，editor 多选含禁用逻辑
 - [x] **Step 24**: 能力值雷达图 — 纯 SVG 六边形雷达图，6 维度（领导力/适应力新增），发色映射填充，卡片切换条形/雷达，编辑器实时预览
+- [x] **Step 26**: AI 背景故事生成 — `backstory` 字段，POST `/api/mii/generate-backstory`（OpenAI API / 模板降级），MiiEditor 一键生成按钮
+- [x] **Step 27**: 角色对战模拟 — `/mii/battle` 页面，双角色选择，回合制战斗日志，HP 条，胜者横幅
+- [x] **Step 28**: Team 视图 — `/mii/team` 页面，团队综合雷达图（均值），S+/A/B/C/D 评级，成员卡片含 vs 团队均值指标
+- [x] **Step 29**: 与 openclaw 集成 — POST `/api/mii/export` 写入 `~/.openclaw/mii-characters.json`，/mii 工具栏"同步到 OpenClaw"按钮
+- [x] **Step 30**: 成就系统 — `Achievement` 类型 + 10 枚成就定义，GET `/api/mii/achievements` 自动检测，角色卡展示金色徽章
 
 ## 进行中
 
 无
 
-## 下一阶段规划
+## 下一阶段规划 (Steps 31-35)
 
-- [ ] **Step 26**: 角色 AI 背景故事生成 — 调用 Claude API，根据性格标签自动生成角色简介
-- [ ] **Step 27**: 角色对战模拟 — 两个角色按 stats 模拟一场任务，显示日志
-- [ ] **Step 28**: Team 视图 — 多个角色组成 Team，显示团队综合能力雷达
-- [ ] **Step 29**: 与 openclaw-control-plane 深度集成 — 共享角色 JSON 配置文件，双向同步
-- [ ] **Step 30**: 角色成就系统 — 完成任务次数、在线时长等积累成就徽章
+- [ ] **Step 31**: 角色对比面板 — 选择任意两个角色并排对比（六维雷达图叠加 + 属性差值高亮），入口在角色卡右键菜单或工具栏
+- [ ] **Step 32**: 角色历史记录 — 每次保存时追加快照到 `data/mii-history.json`，新建页面 `/mii/history` 支持查看角色演变时间线
+- [ ] **Step 33**: 自定义主题色 — 角色可设置主题色（hex），用于卡片边框光晕、雷达图填充，编辑器中添加颜色选取器
+- [ ] **Step 34**: 角色任务日志 — 新建 POST `/api/mii/task-log` 记录任务完成情况，在角色详情页展示任务记录列表，成就系统关联任务数量
+- [ ] **Step 35**: Mii 卡片动画效果 — 引入 Framer Motion 为角色卡添加入场动画、悬停浮起效果、成就解锁粒子动效
 
 ---
 
@@ -464,4 +469,4 @@
 ---
 
 *Creado: 2026-02-07*
-*Última actualización: 2026-03-28 (Steps 21-24 complete)*
+*Última actualización: 2026-03-28 (Steps 21-24, 26-30 complete)*
