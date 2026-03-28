@@ -9,7 +9,8 @@ import { Download, Edit3, GripVertical, Link, Share2, Trash2, Unlink, Upload } f
 import { MiiAvatar } from "./MiiAvatar";
 import { MiiShareCard } from "./MiiShareCard";
 import type { DockerInstance, MiiCharacter } from "@/lib/mii-types";
-import { PERSONALITY_COLORS, ROLE_ICONS } from "@/lib/mii-types";
+import { HAIR_COLOR_VALUES, PERSONALITY_COLORS, ROLE_ICONS } from "@/lib/mii-types";
+import { MiiRadarChart } from "./MiiRadarChart";
 import { getCharacterBindings, getPrimaryBinding } from "@/lib/mii-utils";
 
 const STATUS_COLORS: Record<MiiCharacter["status"], string> = {
@@ -87,6 +88,7 @@ function CharacterCard({
 }: CharacterCardProps) {
   const [showBindMenu, setShowBindMenu] = useState(false);
   const [showShareCard, setShowShareCard] = useState(false);
+  const [showRadar, setShowRadar] = useState(false);
   const avatarRef = useRef<SVGSVGElement>(null);
   const primaryBinding = getPrimaryBinding(character);
   const bindings = getCharacterBindings(character);
@@ -248,11 +250,46 @@ function CharacterCard({
         </div>
       </div>
 
-      <div style={{ padding: "16px 18px", display: "grid", gap: 10 }}>
-        <StatBar label="执行" value={character.stats.execution} color="#FF3B30" />
-        <StatBar label="创造" value={character.stats.creativity} color="#BF5AF2" />
-        <StatBar label="协调" value={character.stats.coordination} color="#0A84FF" />
-        <StatBar label="专注" value={character.stats.focus} color="#32D74B" />
+      <div style={{ padding: "16px 18px" }}>
+        {/* Stats toggle: bars vs radar */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>能力值</span>
+          <button
+            type="button"
+            onClick={() => setShowRadar((v) => !v)}
+            style={{
+              fontSize: 10,
+              padding: "2px 8px",
+              borderRadius: 6,
+              border: "1px solid var(--border)",
+              backgroundColor: showRadar ? "var(--accent)" : "var(--surface-elevated)",
+              color: showRadar ? "#fff" : "var(--text-muted)",
+              cursor: "pointer",
+            }}
+          >
+            {showRadar ? "条形图" : "雷达图"}
+          </button>
+        </div>
+
+        {showRadar ? (
+          <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
+            <MiiRadarChart
+              stats={character.stats}
+              accentColor={HAIR_COLOR_VALUES[character.avatar.hairColor] ?? "#3B82F6"}
+              size={160}
+              showLabels
+            />
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            <StatBar label="执行" value={character.stats.execution} color="#FF3B30" />
+            <StatBar label="创造" value={character.stats.creativity} color="#BF5AF2" />
+            <StatBar label="协调" value={character.stats.coordination} color="#0A84FF" />
+            <StatBar label="专注" value={character.stats.focus} color="#32D74B" />
+            <StatBar label="领导" value={character.stats.leadership ?? 50} color="#FF9F0A" />
+            <StatBar label="适应" value={character.stats.adaptability ?? 50} color="#30D158" />
+          </div>
+        )}
       </div>
 
       <div

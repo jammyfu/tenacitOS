@@ -102,6 +102,10 @@ export interface MiiStats {
   coordination: number;
   /** Focus and concentration rating (0–100) */
   focus: number;
+  /** Leadership and decision-making ability (0–100) */
+  leadership: number;
+  /** Adaptability and flexibility (0–100) */
+  adaptability: number;
 }
 
 // ─── openclaw / Docker Binding ───────────────────────────────────────────────
@@ -230,6 +234,8 @@ export const DEFAULT_STATS: MiiStats = {
   creativity: 50,
   coordination: 50,
   focus: 50,
+  leadership: 50,
+  adaptability: 50,
 };
 
 export const DEFAULT_INSTANCE_BINDING: Pick<

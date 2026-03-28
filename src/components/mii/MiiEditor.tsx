@@ -7,6 +7,7 @@
 import React, { useMemo, useState } from "react";
 import { WandSparkles } from "lucide-react";
 import { MiiAvatar } from "./MiiAvatar";
+import { MiiRadarChart } from "./MiiRadarChart";
 import type {
   BindingDuty,
   CharacterRole,
@@ -660,6 +661,31 @@ export function MiiEditor({
             {Math.max(bindings.filter((binding) => binding.instanceId !== primaryInstanceId).length, 0)}
           </div>
         </div>
+
+        {/* Radar chart preview */}
+        <div
+          style={{
+            borderRadius: 18,
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--card)",
+            padding: 16,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+            能力雷达图
+          </div>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <MiiRadarChart
+              stats={stats}
+              accentColor={HAIR_COLOR_VALUES[appearance.hairColor] ?? "#3B82F6"}
+              size={180}
+              showLabels
+            />
+          </div>
+        </div>
       </aside>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -720,6 +746,18 @@ export function MiiEditor({
             value={stats.focus}
             color="#32D74B"
             onChange={(next) => setStats((current) => ({ ...current, focus: next }))}
+          />
+          <StatSlider
+            label="领导力"
+            value={stats.leadership ?? 50}
+            color="#FF9F0A"
+            onChange={(next) => setStats((current) => ({ ...current, leadership: next }))}
+          />
+          <StatSlider
+            label="适应力"
+            value={stats.adaptability ?? 50}
+            color="#30D158"
+            onChange={(next) => setStats((current) => ({ ...current, adaptability: next }))}
           />
         </Section>
 
