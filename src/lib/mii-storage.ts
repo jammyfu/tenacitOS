@@ -8,6 +8,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import type { MiiCharacter } from "./mii-types";
+import { normalizeCharacter } from "./mii-utils";
 
 const DATA_PATH = join(process.cwd(), "data", "mii-characters.json");
 
@@ -15,7 +16,10 @@ export function readCharacters(): MiiCharacter[] {
   try {
     if (!existsSync(DATA_PATH)) return [];
     const raw = readFileSync(DATA_PATH, "utf-8");
-    return JSON.parse(raw) as MiiCharacter[];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.map((character) => normalizeCharacter(character))
+      : [];
   } catch {
     return [];
   }
@@ -33,14 +37,15 @@ export function findCharacter(id: string): MiiCharacter | undefined {
 
 export function upsertCharacter(character: MiiCharacter): MiiCharacter {
   const all = readCharacters();
-  const idx = all.findIndex((c) => c.id === character.id);
+  const normalized = normalizeCharacter(character);
+  const idx = all.findIndex((c) => c.id === normalized.id);
   if (idx >= 0) {
-    all[idx] = character;
+    all[idx] = normalized;
   } else {
-    all.push(character);
+    all.push(normalized);
   }
   writeCharacters(all);
-  return character;
+  return normalized;
 }
 
 export function deleteCharacter(id: string): boolean {

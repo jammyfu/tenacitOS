@@ -71,6 +71,9 @@ function clearAttempts(ip: string): void {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const isSecureRequest =
+    request.nextUrl.protocol === "https:" || forwardedProto === "https";
 
   // Rate limit check
   const { allowed, retryAfterMs } = checkRateLimit(ip);
@@ -93,10 +96,11 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ success: true });
 
     // Set auth cookie (7 days expiry)
-    // secure=true in production (HTTPS), false in dev (HTTP localhost)
+    // Only mark secure when the incoming request is actually HTTPS.
+    // Production on plain localhost/SSH tunnel should still be able to auth.
     response.cookies.set("mc_auth", process.env.AUTH_SECRET!, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureRequest,
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",

@@ -10,6 +10,8 @@ interface AgentPanelProps {
 }
 
 export default function AgentPanel({ agent, state, onClose }: AgentPanelProps) {
+  const taskLines = state.currentTask?.split('\n').filter(Boolean) || [];
+
   const getStatusColor = () => {
     switch (state.status) {
       case 'working': return 'text-green-500';
@@ -61,7 +63,11 @@ export default function AgentPanel({ agent, state, onClose }: AgentPanelProps) {
       {state.currentTask && (
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-gray-400 mb-2">Current Task</h3>
-          <p className="text-base">{state.currentTask}</p>
+          <div className="space-y-2">
+            {taskLines.map((line) => (
+              <p key={line} className="text-base whitespace-pre-wrap">{line}</p>
+            ))}
+          </div>
         </div>
       )}
 
@@ -96,21 +102,20 @@ export default function AgentPanel({ agent, state, onClose }: AgentPanelProps) {
         </div>
       </div>
 
-      {/* Activity Feed (placeholder) */}
       <div>
         <h3 className="text-sm font-semibold text-gray-400 mb-3">Recent Activity</h3>
         <div className="space-y-2">
           <div className="bg-white/5 p-3 rounded-lg text-sm">
-            <p className="text-gray-400 text-xs mb-1">2 minutes ago</p>
-            <p>Completed task: Generate report</p>
+            <p className="text-gray-400 text-xs mb-1">Current snapshot</p>
+            <p>{taskLines[0] || 'No recent activity available'}</p>
           </div>
           <div className="bg-white/5 p-3 rounded-lg text-sm">
-            <p className="text-gray-400 text-xs mb-1">15 minutes ago</p>
-            <p>Started: {state.currentTask || 'Processing data'}</p>
+            <p className="text-gray-400 text-xs mb-1">Session activity</p>
+            <p>{taskLines[1] || `Queue depth: ${state.tasksInQueue || 0}`}</p>
           </div>
           <div className="bg-white/5 p-3 rounded-lg text-sm">
-            <p className="text-gray-400 text-xs mb-1">1 hour ago</p>
-            <p>Switched model to {state.model}</p>
+            <p className="text-gray-400 text-xs mb-1">Discovery source</p>
+            <p>{taskLines[2] || `Model: ${state.model || 'unknown'}`}</p>
           </div>
         </div>
       </div>

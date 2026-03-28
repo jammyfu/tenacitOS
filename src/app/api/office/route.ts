@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
-import { readFileSync, statSync, readdirSync } from "fs";
+import { existsSync, readFileSync, statSync } from "fs";
 import { join } from "path";
+import { BRANDING } from "@/config/branding";
+import { OPENCLAW_DIR, OPENCLAW_WORKSPACE } from "@/lib/paths";
+import { readWorkspaceIdentity } from "@/lib/workspace-identity";
+import { discoverAgents, readAgentSessionSummary } from "@/lib/openclaw-discovery";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +60,32 @@ interface AgentSession {
   label?: string;
   lastActivity?: string;
   createdAt?: string;
+}
+
+interface OfficeAgent {
+  id: string;
+  name: string;
+  emoji: string;
+  color: string;
+  role: string;
+  currentTask: string;
+  isActive: boolean;
+  model?: string;
+  lastActivity?: string;
+  activeSessions?: number;
+  source?: string;
+}
+
+interface OpenClawAgentConfig {
+  id: string;
+  name?: string;
+  workspace: string;
+}
+
+interface OpenClawConfig {
+  agents?: {
+    list?: OpenClawAgentConfig[];
+  };
 }
 
 async function getAgentStatusFromGateway(): Promise<
@@ -175,21 +205,55 @@ function getAgentStatusFromFiles(
     } else {
       return { isActive: false, currentTask: "SLEEPING: zzZ...", lastSeen };
     }
-  } catch (error) {
+  } catch {
     // No memory file or error reading
     return { isActive: false, currentTask: "SLEEPING: zzZ...", lastSeen: 0 };
   }
 }
 
 export async function GET() {
+  const workspaceIdentity = readWorkspaceIdentity(OPENCLAW_WORKSPACE);
+
   try {
-    const configPath = (process.env.OPENCLAW_DIR || "/root/.openclaw") + "/openclaw.json";
-    const config = JSON.parse(readFileSync(configPath, "utf-8"));
+    const configPath = join(OPENCLAW_DIR, "openclaw.json");
+    const config: OpenClawConfig | null = existsSync(configPath)
+      ? JSON.parse(readFileSync(configPath, "utf-8"))
+      : null;
+
+    const configuredAgents = config?.agents?.list ?? [];
+
+    if (configuredAgents.length === 0) {
+      const fallbackAgents: OfficeAgent[] = discoverAgents().map((agent) => {
+        const fileStatus = getAgentStatusFromFiles(agent.id, agent.workspace);
+        const sessionStatus = readAgentSessionSummary(agent.id);
+
+        return {
+          id: agent.id,
+          name: agent.name,
+          emoji: agent.emoji,
+          color: agent.color,
+          role: agent.id === "main" ? "Main Agent" : "Agent",
+          currentTask:
+            fileStatus.currentTask !== "SLEEPING: zzZ..."
+              ? fileStatus.currentTask
+              : sessionStatus.updatedAt
+                ? `IDLE: last session ${new Date(sessionStatus.updatedAt).toLocaleString("zh-CN")}`
+                : "SLEEPING: zzZ...",
+          isActive: fileStatus.isActive,
+          model: agent.model,
+          lastActivity: fileStatus.lastSeen ? new Date(fileStatus.lastSeen).toISOString() : sessionStatus.updatedAt,
+          activeSessions: sessionStatus.activeSessions,
+          source: agent.source,
+        };
+      });
+
+      return NextResponse.json({ agents: fallbackAgents, source: "fallback" });
+    }
 
     // Try gateway first, fallback to file-based
     const gatewayStatus = await getAgentStatusFromGateway();
 
-    const agents = config.agents.list.map((agent: any) => {
+    const agents: OfficeAgent[] = configuredAgents.map((agent) => {
       const agentInfo = AGENT_CONFIG[agent.id as keyof typeof AGENT_CONFIG] || {
         emoji: "🤖",
         color: "#666",
@@ -202,6 +266,7 @@ export async function GET() {
       if (!status) {
         status = getAgentStatusFromFiles(agent.id, agent.workspace);
       }
+      const sessionStatus = readAgentSessionSummary(agent.id);
 
       // Map freelance -> devclaw for canvas compatibility
       const canvasId = agent.id === "freelance" ? "devclaw" : agent.id;
@@ -214,15 +279,31 @@ export async function GET() {
         role: agentInfo.role,
         currentTask: status.currentTask,
         isActive: status.isActive,
+        model: undefined,
+        lastActivity: status.lastSeen ? new Date(status.lastSeen).toISOString() : sessionStatus.updatedAt,
+        activeSessions: sessionStatus.activeSessions,
+        source: "config",
       };
     });
 
-    return NextResponse.json({ agents });
+    return NextResponse.json({ agents, source: "openclaw" });
   } catch (error) {
     console.error("Error getting office data:", error);
-    return NextResponse.json(
-      { error: "Failed to load office data" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      agents: [
+        {
+          id: "main",
+          name: workspaceIdentity.name || BRANDING.agentName,
+          emoji: workspaceIdentity.emoji || BRANDING.agentEmoji,
+          color: "#ff6b35",
+          role: "Main Agent",
+          currentTask: "Office data is temporarily unavailable.",
+          isActive: false,
+          source: "fallback-error",
+        },
+      ],
+      source: "fallback-error",
+      error: "Failed to load office data",
+    });
   }
 }

@@ -10,36 +10,49 @@
  */
 
 import { NextResponse } from "next/server";
-import { readFileSync, existsSync } from "fs";
 import type { DockerInstance } from "@/lib/mii-types";
+import { readCharacters } from "@/lib/mii-storage";
+import { getPrimaryBinding, getCharacterBindings } from "@/lib/mii-utils";
+import { discoverAgents } from "@/lib/openclaw-discovery";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const instances: DockerInstance[] = [];
+interface LiveStatusPayload {
+  agents?: Array<{
+    id: string;
+    status?: string;
+  }>;
+}
 
-  // ── Read from openclaw.json (same as /api/agents) ─────────────────────────
-  try {
-    const configPath =
-      (process.env.OPENCLAW_DIR || "/root/.openclaw") + "/openclaw.json";
-    if (existsSync(configPath)) {
-      const config = JSON.parse(readFileSync(configPath, "utf-8"));
-      for (const agent of config?.agents?.list ?? []) {
-        const agentId: string = agent.id;
-        instances.push({
-          id: agentId,
-          name: agent.name || agentId,
-          status: "unknown",
-          workspace: agent.workspace,
-          model: agent.model?.primary || config?.agents?.defaults?.model?.primary,
-          emoji: agent?.ui?.emoji || "🤖",
-          color: agent?.ui?.color || "#666666",
-        });
-      }
-    }
-  } catch {
-    // openclaw not configured — return empty list
-  }
+export async function GET() {
+  const characters = readCharacters();
+  const instances: DockerInstance[] = discoverAgents().map((agent) => {
+    const assignedCharacter = characters.find(
+      (character) => getPrimaryBinding(character)?.instanceId === agent.id
+    );
+    const assignedDuty =
+      assignedCharacter &&
+      getCharacterBindings(assignedCharacter).find(
+        (binding) => binding.instanceId === agent.id
+      )?.duty;
+
+    return {
+      id: agent.id,
+      name: agent.name,
+      status: "unknown",
+      workspace: agent.workspace,
+      model: agent.model,
+      emoji: agent.emoji,
+      color: agent.color,
+      runtime: "docker",
+      containerName: `openclaw-${agent.id === "main" ? "claw01" : agent.id}`,
+      assignedCharacterId: assignedCharacter?.id,
+      assignedCharacterName: assignedCharacter?.name,
+      assignedDuty,
+    };
+  });
+
+  // Discovery is already resilient; keep runtime status enrichment below.
 
   // ── Attempt live status check via HTTP (ws fallback) ──────────────────────
   // openclaw-control-plane exposes a REST endpoint alongside its WebSocket.
@@ -52,10 +65,10 @@ export async function GET() {
     });
     clearTimeout(timeout);
     if (res.ok) {
-      const data = await res.json();
+      const data = (await res.json()) as LiveStatusPayload;
       // Merge live status into our instances list
       for (const inst of instances) {
-        const live = data?.agents?.find((a: any) => a.id === inst.id);
+        const live = data?.agents?.find((agent) => agent.id === inst.id);
         if (live) {
           inst.status = live.status === "running" ? "running" : "stopped";
         }

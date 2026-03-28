@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group, Vector3 } from 'three';
 import VoxelAvatar from './VoxelAvatar';
@@ -70,10 +70,9 @@ export default function MovingAvatar({
   // Notificar posición inicial
   useEffect(() => {
     onPositionUpdate(agent.id, initialPos.clone());
-  }, []);
+  }, [agent.id, initialPos, onPositionUpdate]);
 
-  // Verificar si una posición está libre (sin colisiones)
-  const isPositionFree = (pos: Vector3): boolean => {
+  const isPositionFree = useCallback((pos: Vector3): boolean => {
     const minDistanceToObstacle = 1.5; // distancia mínima a muebles
     const minDistanceToAvatar = 1.2; // distancia mínima entre avatares
 
@@ -95,7 +94,7 @@ export default function MovingAvatar({
     }
 
     return true;
-  };
+  }, [agent.id, obstacles, otherAvatarPositions]);
 
   // Cambiar objetivo cada 5-10 segundos (depende del estado)
   useEffect(() => {
@@ -143,7 +142,7 @@ export default function MovingAvatar({
       clearTimeout(timeout);
       clearInterval(interval);
     };
-  }, [state.status]);
+  }, [isPositionFree, officeBounds.maxX, officeBounds.maxZ, officeBounds.minX, officeBounds.minZ, state.status]);
 
   // Mover suavemente hacia el objetivo
   useFrame((frameState, delta) => {

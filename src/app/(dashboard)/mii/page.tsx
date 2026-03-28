@@ -8,11 +8,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Users, Plus, Smile } from "lucide-react";
+import { Plus, Smile } from "lucide-react";
 import { MiiHall } from "@/components/mii/MiiHall";
 import { MiiEditor } from "@/components/mii/MiiEditor";
 import { useDockerInstances } from "@/hooks/useDockerInstances";
 import type { MiiCharacter } from "@/lib/mii-types";
+import { getPrimaryBinding, setPrimaryInstance } from "@/lib/mii-utils";
 
 export default function MiiPage() {
   const [characters, setCharacters] = useState<MiiCharacter[]>([]);
@@ -67,7 +68,7 @@ export default function MiiPage() {
     await fetch("/api/mii", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...character, dockerInstanceId: instanceId }),
+      body: JSON.stringify(setPrimaryInstance(character, instanceId)),
     });
     fetchCharacters();
   };
@@ -88,9 +89,14 @@ export default function MiiPage() {
 
   // ── Stats summary ─────────────────────────────────────────────────────────
   const onlineCount = characters.filter((c) => {
-    const inst = instances.find((i) => i.id === c.dockerInstanceId);
-    return inst?.status === "running" || (c.status === "online" && !c.dockerInstanceId);
+    const primaryInstanceId = getPrimaryBinding(c)?.instanceId;
+    const inst = instances.find((i) => i.id === primaryInstanceId);
+    return inst?.status === "running" || (c.status === "online" && !primaryInstanceId);
   }).length;
+
+  const boundCount = characters.filter(
+    (character) => getPrimaryBinding(character)?.instanceId
+  ).length;
 
   return (
     <div style={{ padding: "24px" }}>
@@ -132,8 +138,8 @@ export default function MiiPage() {
         {[
           { label: "总角色数", value: characters.length, color: "var(--info)" },
           { label: "在线", value: onlineCount, color: "var(--positive)" },
-          { label: "繁忙", value: characters.filter((c) => c.status === "busy").length, color: "var(--warning)" },
-          { label: "实例", value: instances.length, color: "var(--accent)" },
+          { label: "已绑定主实例", value: boundCount, color: "var(--warning)" },
+          { label: "实例池", value: instances.length, color: "var(--accent)" },
         ].map(({ label, value, color }) => (
           <div
             key={label}
@@ -220,6 +226,7 @@ export default function MiiPage() {
             </div>
             <MiiEditor
               initial={editingCharacter ?? undefined}
+              dockerInstances={instances}
               onSave={handleSave}
               onCancel={() => {
                 setIsCreating(false);
