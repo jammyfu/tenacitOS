@@ -306,6 +306,108 @@ export const PERSONALITY_COLORS: Record<Personality, string> = {
   团队协作: "#0ea5e9",
 };
 
+// ─── Achievement System ───────────────────────────────────────────────────────
+
+export type AchievementId =
+  | "first_character"
+  | "five_characters"
+  | "ten_characters"
+  | "perfect_stat"
+  | "all_stats_maxed"
+  | "full_team"
+  | "all_roles"
+  | "all_personalities"
+  | "online_hero"
+  | "stat_total_500";
+
+export interface Achievement {
+  id: AchievementId;
+  name: string;
+  description: string;
+  icon: string;
+  /** Characters that have unlocked this achievement */
+  unlockedBy: string[]; // character IDs
+  /** Whether this is a team/global achievement */
+  global: boolean;
+  unlockedAt?: string;
+}
+
+export const ACHIEVEMENT_DEFINITIONS: Record<
+  AchievementId,
+  Omit<Achievement, "unlockedBy" | "unlockedAt">
+> = {
+  first_character: {
+    id: "first_character",
+    name: "初来乍到",
+    description: "创建你的第一个角色",
+    icon: "🌱",
+    global: true,
+  },
+  five_characters: {
+    id: "five_characters",
+    name: "小队集结",
+    description: "团队成员达到 5 人",
+    icon: "🫂",
+    global: true,
+  },
+  ten_characters: {
+    id: "ten_characters",
+    name: "精英军团",
+    description: "团队成员达到 10 人",
+    icon: "🏟️",
+    global: true,
+  },
+  perfect_stat: {
+    id: "perfect_stat",
+    name: "满分选手",
+    description: "某项能力值达到 100",
+    icon: "💯",
+    global: false,
+  },
+  all_stats_maxed: {
+    id: "all_stats_maxed",
+    name: "全能王者",
+    description: "全部 6 项能力值均达到 100",
+    icon: "👑",
+    global: false,
+  },
+  full_team: {
+    id: "full_team",
+    name: "满编团队",
+    description: "同时拥有 5 名以上在线角色",
+    icon: "⚡",
+    global: true,
+  },
+  all_roles: {
+    id: "all_roles",
+    name: "角色齐全",
+    description: "团队中覆盖所有职责类型",
+    icon: "🎭",
+    global: true,
+  },
+  all_personalities: {
+    id: "all_personalities",
+    name: "百变性格",
+    description: "团队中覆盖所有性格标签",
+    icon: "🌈",
+    global: true,
+  },
+  online_hero: {
+    id: "online_hero",
+    name: "在线英雄",
+    description: "角色状态为在线",
+    icon: "🟢",
+    global: false,
+  },
+  stat_total_500: {
+    id: "stat_total_500",
+    name: "天赋异禀",
+    description: "单角色能力总分超过 500",
+    icon: "🌟",
+    global: false,
+  },
+};
+
 export const EYE_COLOR_VALUES: Record<EyeColor, string> = {
   brown: "#6B3A2A",
   blue: "#2980B9",

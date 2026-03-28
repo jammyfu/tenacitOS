@@ -9,7 +9,7 @@ import { Download, Edit3, GripVertical, Link, Share2, Trash2, Unlink, Upload } f
 import { MiiAvatar } from "./MiiAvatar";
 import { MiiShareCard } from "./MiiShareCard";
 import type { DockerInstance, MiiCharacter } from "@/lib/mii-types";
-import { HAIR_COLOR_VALUES, PERSONALITY_COLORS, ROLE_ICONS } from "@/lib/mii-types";
+import { ACHIEVEMENT_DEFINITIONS, HAIR_COLOR_VALUES, PERSONALITY_COLORS, ROLE_ICONS } from "@/lib/mii-types";
 import { MiiRadarChart } from "./MiiRadarChart";
 import { getCharacterBindings, getPrimaryBinding } from "@/lib/mii-utils";
 
@@ -61,6 +61,23 @@ function StatBar({
       </span>
     </div>
   );
+}
+
+function getCharacterAchievements(character: MiiCharacter): Array<{ icon: string; name: string }> {
+  const badges: Array<{ icon: string; name: string }> = [];
+  const statsArr = Object.values(character.stats);
+  const total = statsArr.reduce((s, v) => s + v, 0);
+
+  if (statsArr.some((v) => v >= 100))
+    badges.push({ icon: ACHIEVEMENT_DEFINITIONS.perfect_stat.icon, name: ACHIEVEMENT_DEFINITIONS.perfect_stat.name });
+  if (statsArr.every((v) => v >= 100))
+    badges.push({ icon: ACHIEVEMENT_DEFINITIONS.all_stats_maxed.icon, name: ACHIEVEMENT_DEFINITIONS.all_stats_maxed.name });
+  if (character.status === "online")
+    badges.push({ icon: ACHIEVEMENT_DEFINITIONS.online_hero.icon, name: ACHIEVEMENT_DEFINITIONS.online_hero.name });
+  if (total > 500)
+    badges.push({ icon: ACHIEVEMENT_DEFINITIONS.stat_total_500.icon, name: ACHIEVEMENT_DEFINITIONS.stat_total_500.name });
+
+  return badges;
 }
 
 interface CharacterCardProps {
@@ -346,6 +363,37 @@ function CharacterCard({
               })}
           </div>
         )}
+
+        {/* Achievement badges */}
+        {(() => {
+          const badges = getCharacterAchievements(character);
+          if (badges.length === 0) return null;
+          return (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+              {badges.map((badge) => (
+                <span
+                  key={badge.name}
+                  title={badge.name}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: 10,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    backgroundColor: "rgba(255,215,0,0.12)",
+                    border: "1px solid rgba(255,215,0,0.3)",
+                    color: "#FFD60A",
+                    fontWeight: 600,
+                    cursor: "default",
+                  }}
+                >
+                  {badge.icon} {badge.name}
+                </span>
+              ))}
+            </div>
+          );
+        })()}
 
         {character.catchphrase && (
           <div
