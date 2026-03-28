@@ -70,6 +70,10 @@ interface OfficeAgent {
   role: string;
   currentTask: string;
   isActive: boolean;
+  model?: string;
+  lastActivity?: string;
+  activeSessions?: number;
+  source?: string;
 }
 
 interface OpenClawAgentConfig {
@@ -236,6 +240,10 @@ export async function GET() {
                 ? `IDLE: last session ${new Date(sessionStatus.updatedAt).toLocaleString("zh-CN")}`
                 : "SLEEPING: zzZ...",
           isActive: fileStatus.isActive,
+          model: agent.model,
+          lastActivity: fileStatus.lastSeen ? new Date(fileStatus.lastSeen).toISOString() : sessionStatus.updatedAt,
+          activeSessions: sessionStatus.activeSessions,
+          source: agent.source,
         };
       });
 
@@ -258,6 +266,7 @@ export async function GET() {
       if (!status) {
         status = getAgentStatusFromFiles(agent.id, agent.workspace);
       }
+      const sessionStatus = readAgentSessionSummary(agent.id);
 
       // Map freelance -> devclaw for canvas compatibility
       const canvasId = agent.id === "freelance" ? "devclaw" : agent.id;
@@ -270,6 +279,10 @@ export async function GET() {
         role: agentInfo.role,
         currentTask: status.currentTask,
         isActive: status.isActive,
+        model: undefined,
+        lastActivity: status.lastSeen ? new Date(status.lastSeen).toISOString() : sessionStatus.updatedAt,
+        activeSessions: sessionStatus.activeSessions,
+        source: "config",
       };
     });
 
@@ -286,6 +299,7 @@ export async function GET() {
           role: "Main Agent",
           currentTask: "Office data is temporarily unavailable.",
           isActive: false,
+          source: "fallback-error",
         },
       ],
       source: "fallback-error",

@@ -27,6 +27,10 @@ interface OfficeApiAgent {
   role: string;
   currentTask: string;
   isActive: boolean;
+  model?: string;
+  lastActivity?: string;
+  activeSessions?: number;
+  source?: string;
 }
 
 interface OfficeApiResponse {
@@ -84,10 +88,12 @@ function buildSceneAgents(dataAgents: OfficeApiAgent[]): SceneAgent[] {
         id: liveAgent.id,
         status,
         currentTask: liveAgent.currentTask,
-        model: undefined,
-        tokensPerHour: liveAgent.isActive ? 1200 : 0,
-        tasksInQueue: liveAgent.isActive ? 1 : 0,
-        uptime: 1,
+        model: liveAgent.model,
+        tokensPerHour: liveAgent.isActive ? 1200 * Math.max(liveAgent.activeSessions || 1, 1) : 0,
+        tasksInQueue: liveAgent.activeSessions || 0,
+        uptime: liveAgent.lastActivity
+          ? Math.max(1, Math.floor((Date.now() - new Date(liveAgent.lastActivity).getTime()) / 86400000))
+          : 0,
       },
     };
   });
@@ -184,6 +190,7 @@ export default function Office3D() {
   ];
 
   const selectedSceneAgent = sceneAgents.find(({ config }) => config.id === selectedAgent) || null;
+  const selectedApiAgent = apiAgents.find((agent) => agent.id === selectedAgent) || null;
 
   return (
     <div className="fixed inset-0 bg-gray-900" style={{ height: '100vh', width: '100vw' }}>
@@ -253,7 +260,16 @@ export default function Office3D() {
       {selectedSceneAgent && (
         <AgentPanel
           agent={selectedSceneAgent.config}
-          state={selectedSceneAgent.state}
+          state={{
+            ...selectedSceneAgent.state,
+            currentTask: [
+              selectedSceneAgent.state.currentTask,
+              selectedApiAgent?.lastActivity
+                ? `Last activity: ${new Date(selectedApiAgent.lastActivity).toLocaleString('zh-CN')}`
+                : null,
+              selectedApiAgent?.source ? `Source: ${selectedApiAgent.source}` : null,
+            ].filter(Boolean).join('\n'),
+          }}
           onClose={handleClosePanel}
         />
       )}
@@ -324,6 +340,12 @@ export default function Office3D() {
                       <p className="text-sm text-gray-400">Active agents:</p>
                       <p className="text-2xl font-bold text-green-400">
                         {sceneAgents.filter(({ state }) => state.status === 'working').length} / {sceneAgents.length}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Open sessions:</p>
+                      <p className="text-2xl font-bold text-purple-400">
+                        {apiAgents.reduce((sum, agent) => sum + (agent.activeSessions || 0), 0)}
                       </p>
                     </div>
                     <div>
