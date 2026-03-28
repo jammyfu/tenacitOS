@@ -4,7 +4,7 @@
 
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { WandSparkles } from "lucide-react";
 import { MiiAvatar } from "./MiiAvatar";
 import type {
@@ -330,6 +330,38 @@ export function MiiEditor({
   );
   const [catchphrase, setCatchphrase] = useState(normalized.catchphrase ?? "");
 
+  // 3D rotation state
+  const [rotY, setRotY] = useState(0);
+  const [rotX, setRotX] = useState(0);
+  const isDragging = useRef(false);
+  const dragOrigin = useRef({ x: 0, y: 0, rotY: 0, rotX: 0 });
+
+  const handlePreviewMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    dragOrigin.current = { x: e.clientX, y: e.clientY, rotY, rotX };
+    e.preventDefault();
+  };
+  const handlePreviewMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current) return;
+    const dx = e.clientX - dragOrigin.current.x;
+    const dy = e.clientY - dragOrigin.current.y;
+    setRotY(dragOrigin.current.rotY + dx * 0.7);
+    setRotX(Math.max(-25, Math.min(25, dragOrigin.current.rotX + dy * 0.3)));
+  };
+  const handlePreviewMouseUp = () => { isDragging.current = false; };
+
+  const getViewLabel = (y: number): string => {
+    const n = ((y % 360) + 360) % 360;
+    if (n <= 22.5 || n > 337.5) return "正面";
+    if (n <= 67.5) return "3/4";
+    if (n <= 112.5) return "侧面";
+    if (n <= 157.5) return "3/4";
+    if (n <= 202.5) return "背面";
+    if (n <= 247.5) return "3/4";
+    if (n <= 292.5) return "侧面";
+    return "3/4";
+  };
+
   const setApp = (patch: Partial<MiiAppearance>) =>
     setAppearance((current) => ({ ...current, ...patch }));
 
@@ -513,32 +545,81 @@ export function MiiEditor({
             </button>
           </div>
 
+          {/* 3D Preview */}
           <div
             style={{
               display: "flex",
-              justifyContent: "center",
+              flexDirection: "column",
               alignItems: "center",
+              gap: 10,
               marginBottom: 18,
             }}
           >
+            {/* Perspective container */}
             <div
-              style={{
-                width: 180,
-                height: 180,
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background:
-                  "radial-gradient(circle at 50% 25%, rgba(255,255,255,0.28), transparent 45%), rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.1)",
-              }}
+              style={{ perspective: "600px", perspectiveOrigin: "50% 50%" }}
             >
-              <MiiAvatar
-                appearance={appearance}
-                size={150}
-                statusColor={STATUS_COLORS[status]}
-              />
+              <div
+                role="presentation"
+                onMouseDown={handlePreviewMouseDown}
+                onMouseMove={handlePreviewMouseMove}
+                onMouseUp={handlePreviewMouseUp}
+                onMouseLeave={handlePreviewMouseUp}
+                style={{
+                  width: 180,
+                  height: 180,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background:
+                    "radial-gradient(circle at 50% 25%, rgba(255,255,255,0.28), transparent 45%), rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  cursor: isDragging.current ? "grabbing" : "grab",
+                  transform: `rotateY(${rotY}deg) rotateX(${rotX}deg)`,
+                  transition: isDragging.current ? "none" : "transform 0.4s ease",
+                  transformStyle: "preserve-3d",
+                  userSelect: "none",
+                }}
+              >
+                <MiiAvatar
+                  appearance={appearance}
+                  size={140}
+                  statusColor={STATUS_COLORS[status]}
+                />
+              </div>
+            </div>
+
+            {/* Preset view buttons */}
+            <div style={{ display: "flex", gap: 6 }}>
+              {([
+                { label: "正面", y: 0 },
+                { label: "3/4", y: 30 },
+                { label: "侧面", y: 90 },
+                { label: "背面", y: 180 },
+              ] as const).map(({ label, y }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => { setRotY(y); setRotX(0); }}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    fontSize: 11,
+                    cursor: "pointer",
+                    border: `1px solid ${getViewLabel(rotY) === label ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)"}`,
+                    backgroundColor: getViewLabel(rotY) === label ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.04)",
+                    color: "#fff",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Angle indicator */}
+            <div style={{ fontSize: 11, opacity: 0.55, color: "#fff" }}>
+              视角: {getViewLabel(rotY)} · 拖动旋转
             </div>
           </div>
 
