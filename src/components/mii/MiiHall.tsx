@@ -4,8 +4,8 @@
 
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
-import { Download, Edit3, Link, Trash2, Unlink, Upload } from "lucide-react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import { Download, Edit3, GripVertical, Link, Trash2, Unlink, Upload } from "lucide-react";
 import { MiiAvatar } from "./MiiAvatar";
 import type { DockerInstance, MiiCharacter } from "@/lib/mii-types";
 import { getCharacterBindings, getPrimaryBinding } from "@/lib/mii-utils";
@@ -66,6 +66,10 @@ interface CharacterCardProps {
   onEdit: (character: MiiCharacter) => void;
   onDelete: (id: string) => void;
   onBindDocker: (id: string, instanceId: string | undefined) => void;
+  isDragOver?: boolean;
+  onDragStart: (id: string) => void;
+  onDragOver: (id: string) => void;
+  onDrop: () => void;
 }
 
 function CharacterCard({
@@ -74,6 +78,10 @@ function CharacterCard({
   onEdit,
   onDelete,
   onBindDocker,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDrop,
 }: CharacterCardProps) {
   const [showBindMenu, setShowBindMenu] = useState(false);
   const avatarRef = useRef<SVGSVGElement>(null);
@@ -109,13 +117,23 @@ function CharacterCard({
 
   return (
     <article
+      draggable
+      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(character.id); }}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; onDragOver(character.id); }}
+      onDrop={(e) => { e.preventDefault(); onDrop(); }}
+      onDragEnd={() => onDrop()}
       style={{
         borderRadius: 22,
         overflow: "hidden",
-        border: "1px solid var(--border)",
+        border: isDragOver ? "2px solid var(--accent)" : "1px solid var(--border)",
         background:
           "linear-gradient(180deg, rgba(245,158,11,0.10), transparent 28%), var(--card)",
-        boxShadow: "0 12px 30px rgba(0,0,0,0.18)",
+        boxShadow: isDragOver
+          ? "0 0 0 2px var(--accent), 0 12px 30px rgba(0,0,0,0.28)"
+          : "0 12px 30px rgba(0,0,0,0.18)",
+        cursor: "grab",
+        transition: "box-shadow 0.15s, border-color 0.15s",
+        opacity: isDragOver ? 0.85 : 1,
       }}
     >
       <div
@@ -123,11 +141,12 @@ function CharacterCard({
           padding: 20,
           borderBottom: "1px solid var(--border)",
           display: "grid",
-          gridTemplateColumns: "96px 1fr",
-          gap: 16,
+          gridTemplateColumns: "16px 96px 1fr",
+          gap: 12,
           alignItems: "center",
         }}
       >
+        <GripVertical size={14} style={{ color: "var(--text-muted)", opacity: 0.5, flexShrink: 0 }} />
         <div
           style={{
             width: 96,
@@ -535,6 +554,7 @@ interface MiiHallProps {
   onDelete: (id: string) => void;
   onBindDocker: (id: string, instanceId: string | undefined) => void;
   onImport: (characters: MiiCharacter[]) => void;
+  onReorder: (orderedIds: string[]) => void;
 }
 
 export function MiiHall({
@@ -544,21 +564,64 @@ export function MiiHall({
   onDelete,
   onBindDocker,
   onImport,
+  onReorder,
 }: MiiHallProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [groupByRole, setGroupByRole] = useState(false);
+  const [dragSourceId, setDragSourceId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  // Maintain a local ordering for optimistic reorder
+  const [orderedIds, setOrderedIds] = useState<string[] | null>(null);
+
+  const displayCharacters = useMemo(() => {
+    if (!orderedIds) return characters;
+    const map = new Map(characters.map((c) => [c.id, c]));
+    return orderedIds.map((id) => map.get(id)).filter(Boolean) as MiiCharacter[];
+  }, [characters, orderedIds]);
+
+  const handleDragStart = useCallback((id: string) => {
+    setDragSourceId(id);
+  }, []);
+
+  const handleDragOver = useCallback((id: string) => {
+    if (id !== dragSourceId) setDragOverId(id);
+  }, [dragSourceId]);
+
+  const handleDrop = useCallback(() => {
+    if (!dragSourceId || !dragOverId || dragSourceId === dragOverId) {
+      setDragSourceId(null);
+      setDragOverId(null);
+      return;
+    }
+    const base = orderedIds ?? characters.map((c) => c.id);
+    const from = base.indexOf(dragSourceId);
+    const to = base.indexOf(dragOverId);
+    if (from === -1 || to === -1) {
+      setDragSourceId(null);
+      setDragOverId(null);
+      return;
+    }
+    const next = [...base];
+    next.splice(from, 1);
+    next.splice(to, 0, dragSourceId);
+    setOrderedIds(next);
+    onReorder(next);
+    setDragSourceId(null);
+    setDragOverId(null);
+  }, [dragSourceId, dragOverId, orderedIds, characters, onReorder]);
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return characters;
-    return characters.filter(
+    if (!q) return displayCharacters;
+    return displayCharacters.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.role.toLowerCase().includes(q) ||
         c.personality.some((p) => p.toLowerCase().includes(q)) ||
         (c.description?.toLowerCase().includes(q) ?? false)
     );
-  }, [characters, searchQuery]);
+  }, [displayCharacters, searchQuery]);
 
   const grouped = useMemo(() => {
     if (!groupByRole) return null;
@@ -633,7 +696,7 @@ export function MiiHall({
         }}
       >
         <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-          {filtered.length}/{characters.length} 个角色 · {characters.filter((item) => getPrimaryBinding(item)).length} 个已绑定主实例
+          {filtered.length}/{characters.length} 个角色 · {characters.filter((item) => getPrimaryBinding(item)).length} 个已绑定主实例 · 拖拽卡片可排序
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
@@ -713,6 +776,10 @@ export function MiiHall({
                     onEdit={onEdit}
                     onDelete={onDelete}
                     onBindDocker={onBindDocker}
+                    isDragOver={dragOverId === character.id}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
                   />
                 ))}
               </div>
@@ -734,6 +801,10 @@ export function MiiHall({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onBindDocker={onBindDocker}
+                isDragOver={dragOverId === character.id}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
               />
             ))}
           </div>

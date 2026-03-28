@@ -61,6 +61,30 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+/** PATCH — batch reorder: body = { reorder: Array<{ id: string; order: number }> } */
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const reorder: Array<{ id: string; order: number }> = body.reorder;
+    if (!Array.isArray(reorder)) {
+      return NextResponse.json({ error: "Missing reorder array" }, { status: 400 });
+    }
+    const all = readCharacters();
+    const orderMap = new Map(reorder.map(({ id, order }) => [id, order]));
+    const updated: MiiCharacter[] = [];
+    for (const character of all) {
+      if (orderMap.has(character.id)) {
+        const next: MiiCharacter = { ...character, order: orderMap.get(character.id) };
+        upsertCharacter(next);
+        updated.push(next);
+      }
+    }
+    return NextResponse.json({ updated: updated.length });
+  } catch {
+    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");

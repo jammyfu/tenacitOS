@@ -85,6 +85,17 @@ export default function MiiPage() {
     fetchCharacters();
   };
 
+  // ── Reorder ───────────────────────────────────────────────────────────────
+  const handleReorder = useCallback(async (orderedIds: string[]) => {
+    const reorder = orderedIds.map((id, index) => ({ id, order: index }));
+    await fetch("/api/mii", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reorder }),
+    });
+    // No need to re-fetch — MiiHall already shows optimistic order
+  }, []);
+
   const showEditor = isCreating || editingCharacter !== null;
 
   // ── Stats summary ─────────────────────────────────────────────────────────
@@ -257,6 +268,7 @@ export default function MiiPage() {
           onDelete={handleDelete}
           onBindDocker={handleBindDocker}
           onImport={handleImport}
+          onReorder={handleReorder}
         />
       )}
     </div>
