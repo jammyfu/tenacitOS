@@ -44,6 +44,24 @@ interface SceneAgent {
   state: AgentState;
 }
 
+function getLayoutSlot(index: number): AgentConfig {
+  if (index < AGENTS.length) {
+    return AGENTS[index];
+  }
+
+  const baseSlot = AGENTS[index % AGENTS.length];
+  const row = Math.floor(index / AGENTS.length);
+
+  return {
+    ...baseSlot,
+    position: [
+      baseSlot.position[0] + row * 1.5,
+      baseSlot.position[1],
+      baseSlot.position[2] + row * 1.5,
+    ],
+  };
+}
+
 function inferStatus(agent: OfficeApiAgent): AgentStatus {
   const task = agent.currentTask.toUpperCase();
 
@@ -55,7 +73,11 @@ function inferStatus(agent: OfficeApiAgent): AgentStatus {
 }
 
 function buildSceneAgents(dataAgents: OfficeApiAgent[]): SceneAgent[] {
-  return AGENTS.map((slot, index) => {
+  const slots = dataAgents.length > 0
+    ? dataAgents.map((_, index) => getLayoutSlot(index))
+    : [AGENTS[0]];
+
+  return slots.map((slot, index) => {
     const liveAgent = dataAgents[index];
 
     if (!liveAgent) {
@@ -107,6 +129,7 @@ export default function Office3D() {
   const [apiAgents, setApiAgents] = useState<OfficeApiAgent[]>([]);
   const [officeSource, setOfficeSource] = useState<string>('loading');
   const [officeError, setOfficeError] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,6 +151,7 @@ export default function Office3D() {
         setApiAgents(Array.isArray(data.agents) ? data.agents : []);
         setOfficeSource(data.source || 'unknown');
         setOfficeError(data.error || null);
+        setLastSyncedAt(new Date().toISOString());
       } catch (error) {
         if (cancelled) return;
         setApiAgents([]);
@@ -367,7 +391,9 @@ export default function Office3D() {
           <p>🖱️ Mouse: Rotar vista</p>
           <p>🔄 Scroll: Zoom</p>
           <p>👆 Click: Seleccionar</p>
-          <p>📡 Source: {officeSource}</p>
+          <p>👥 Agents: {apiAgents.length || sceneAgents.length}</p>
+          <p>📡 Source: {officeSource === 'loading' ? 'syncing...' : officeSource}</p>
+          {lastSyncedAt && <p>🕒 Synced: {new Date(lastSyncedAt).toLocaleTimeString('zh-CN')}</p>}
           {officeError && <p className="text-red-300">⚠ {officeError}</p>}
         </div>
         <button
