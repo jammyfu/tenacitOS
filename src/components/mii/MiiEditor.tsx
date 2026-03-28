@@ -34,7 +34,49 @@ import {
   HAIR_COLOR_VALUES,
   EYE_COLOR_VALUES,
 } from "@/lib/mii-types";
-import { randomUUID } from "crypto";
+// ─── Randomizer ───────────────────────────────────────────────────────────────
+
+function randomPick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function randomAppearance(): MiiAppearance {
+  const hairColor = randomPick(Object.keys(HAIR_COLOR_VALUES) as HairColor[]);
+  const shirtColors = [
+    "#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6",
+    "#EC4899", "#06B6D4", "#F97316", "#6B7280", "#14B8A6",
+    "#1A1A1A", "#FFFFFF",
+  ];
+  return {
+    faceShape: randomPick(["round", "oval", "square", "heart", "diamond"] as FaceShape[]),
+    skinTone: randomPick(Object.keys(SKIN_TONE_COLORS) as SkinTone[]),
+    hairStyle: randomPick([
+      "short-straight", "medium-wavy", "long-straight", "bob",
+      "mohawk", "bald", "spiky", "bun", "side-swept",
+    ] as HairStyle[]),
+    hairColor,
+    eyeStyle: randomPick(["round", "oval", "narrow", "wide", "star", "anime"] as EyeStyle[]),
+    eyeColor: randomPick(Object.keys(EYE_COLOR_VALUES) as EyeColor[]),
+    eyebrowStyle: randomPick([
+      "normal", "thick", "thin", "arched", "worried", "angry", "raised",
+    ] as EyebrowStyle[]),
+    eyebrowColor: hairColor,
+    mouthStyle: randomPick([
+      "smile", "big-smile", "neutral", "smirk", "open-happy", "slight-frown",
+    ] as MouthStyle[]),
+    noseSize: randomPick([0, 1, 2] as (0 | 1 | 2)[]),
+    accessory: randomPick([
+      "none", "none", "none", "glasses", "sunglasses",
+      "hat-cap", "hat-beanie", "headband", "earrings",
+    ] as AccessoryType[]),
+    accessoryColor: randomPick(["#1A1A1A", "#888888", "#C0392B", "#2980B9", "#27AE60", "#F39C12"]),
+    shirtStyle: randomPick(["plain", "collar", "hoodie", "tank", "turtleneck"] as ShirtStyle[]),
+    shirtColor: randomPick(shirtColors),
+    blush: randomPick([0, 0, 0, 1, 2] as (0 | 1 | 2)[]),
+    facialHair: randomPick([0, 0, 0, 0, 1, 2, 3] as (0 | 1 | 2 | 3)[]),
+    facialHairColor: hairColor,
+  };
+}
 
 // ─── Option Lists ─────────────────────────────────────────────────────────────
 
@@ -351,6 +393,28 @@ export function MiiEditor({ initial, onSave, onCancel }: MiiEditorProps) {
             statusColor={STATUS_COLORS[status]}
           />
         </div>
+
+        {/* Randomize button */}
+        <button
+          onClick={() => setAppearance(randomAppearance())}
+          style={{
+            width: "100%",
+            padding: "6px 12px",
+            borderRadius: 8,
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--surface-elevated)",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            fontSize: 12,
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
+        >
+          🎲 随机外观
+        </button>
 
         {/* Name input */}
         <input

@@ -1,3 +1,41 @@
+# tenacitOS Mii System Roadmap
+
+> **Mii 角色系统** — 将 AI 代理人格化为可视角色，与 openclaw-control-plane 深度集成
+
+## 已完成
+
+- [x] **Step 1**: 核心类型系统 (`mii-types.ts`) — `FaceShape`/`HairStyle`/`SkinTone`/`EyeStyle`/`Accessory` 全类型定义，含颜色映射表
+- [x] **Step 2**: 服务端存储 (`mii-storage.ts`) — JSON 文件持久化，完整 CRUD (`read`/`write`/`find`/`upsert`/`delete`)
+- [x] **Step 3**: SVG 角色渲染器 (`MiiAvatar.tsx`) — 纯 SVG 参数化渲染：9 种发型、5 种脸型、7 种眼型、7 种眉型、6 种嘴型、7 种配件、5 种服装、腮红、胡须
+- [x] **Step 4**: 角色编辑器 (`MiiEditor.tsx`) — 双栏布局（左：实时预览 / 右：外观调节），可折叠分区，性格多选，能力值滑杆
+- [x] **Step 5**: 角色展示大厅 (`MiiHall.tsx`) — 响应式卡片网格，状态徽章，统计条，Docker 实例绑定，全局导入/导出 JSON
+- [x] **Step 6**: Dashboard 页面 (`mii/page.tsx`) — 模态编辑器、统计卡片（总数/在线/繁忙/实例）、完整 CRUD 流程
+- [x] **Step 7**: REST API (`api/mii/route.ts`) — `GET`/`POST`/`PUT`/`DELETE` 完整 CRUD
+- [x] **Step 8**: Docker 实例 API (`api/mii/docker-instances/route.ts`) — 读取 `openclaw.json`，调用控制平面 REST 获取实时状态
+- [x] **Step 9**: `useDockerInstances` Hook — REST 轮询（10s）+ WebSocket 实时推送，优雅降级
+
+## 进行中
+
+- [ ] **Step 10**: Bug 修复 + 稳定性 + 随机外观按钮 ← **当前正在做**
+  - 移除 `MiiEditor.tsx` 中未使用的 Node.js `crypto` 导入
+  - `mii-storage.ts` 自动创建 `data/` 目录，防止首次写入失败
+  - 编辑器新增「随机外观」按钮，一键生成随机角色外观
+
+## 待开发
+
+- [ ] **Step 11**: 角色对话气泡 / 座右铭 — `MiiCharacter` 增加 `catchphrase` 字段，卡片展示语音泡
+- [ ] **Step 12**: 画廊搜索 & 分组过滤 — 按名称/职责/性格实时过滤，按状态/职责分组
+- [ ] **Step 13**: 单角色 SVG 下载 — 每张角色卡片支持导出含名称标签的独立 SVG 文件
+- [ ] **Step 14**: Agents 视图 Mii 集成 — `AgentRow` 当实例绑定角色时用 `MiiAvatarCard` 替换抽象图标
+- [ ] **Step 15**: 外观多样性增强 — 新增辫子/双马尾/卷发发型，猫眼/下垂眼眼型，耳机/徽章配件
+- [ ] **Step 16**: 角色拖拽排序 — 画廊支持拖拽调整顺序（HTML5 Drag & Drop），结果持久化
+- [ ] **Step 17**: Arcade 指挥舱集成 — Sessions/Agents 页面用 Mii 角色卡替换抽象代理单元
+- [ ] **Step 18**: 角色性格 → 动态对话 — 根据性格标签自动生成个性化对话气泡内容
+- [ ] **Step 19**: TopBar Mii 状态指示 — TopBar 右侧展示当前活跃 Mii 的头像缩略图
+- [ ] **Step 20**: openclaw-control-plane 深度集成 — 双向同步角色配置，状态变更实时反映
+
+---
+
 # 🦞 Mission Control - Roadmap
 
 ## Fase 1: Fundamentos (Semana 1)

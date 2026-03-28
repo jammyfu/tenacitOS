@@ -5,8 +5,8 @@
  * Falls back gracefully if the file doesn't exist yet.
  */
 
-import { readFileSync, writeFileSync, existsSync } from "fs";
-import { join } from "path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { join, dirname } from "path";
 import type { MiiCharacter } from "./mii-types";
 
 const DATA_PATH = join(process.cwd(), "data", "mii-characters.json");
@@ -22,6 +22,8 @@ export function readCharacters(): MiiCharacter[] {
 }
 
 export function writeCharacters(characters: MiiCharacter[]): void {
+  const dir = dirname(DATA_PATH);
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   writeFileSync(DATA_PATH, JSON.stringify(characters, null, 2), "utf-8");
 }
 
