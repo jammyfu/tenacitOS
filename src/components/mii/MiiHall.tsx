@@ -5,8 +5,9 @@
 "use client";
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import { Download, Edit3, GripVertical, Link, Trash2, Unlink, Upload } from "lucide-react";
+import { Download, Edit3, GripVertical, Link, Share2, Trash2, Unlink, Upload } from "lucide-react";
 import { MiiAvatar } from "./MiiAvatar";
+import { MiiShareCard } from "./MiiShareCard";
 import type { DockerInstance, MiiCharacter } from "@/lib/mii-types";
 import { getCharacterBindings, getPrimaryBinding } from "@/lib/mii-utils";
 
@@ -84,6 +85,7 @@ function CharacterCard({
   onDrop,
 }: CharacterCardProps) {
   const [showBindMenu, setShowBindMenu] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
   const avatarRef = useRef<SVGSVGElement>(null);
   const primaryBinding = getPrimaryBinding(character);
   const bindings = getCharacterBindings(character);
@@ -368,6 +370,10 @@ function CharacterCard({
             <Download size={13} />
             SVG
           </button>
+          <button type="button" onClick={() => setShowShareCard(true)} style={ghostButtonStyle}>
+            <Share2 size={13} />
+            分享
+          </button>
           <button type="button" onClick={() => onEdit(character)} style={ghostButtonStyle}>
             <Edit3 size={13} />
             编辑
@@ -383,6 +389,10 @@ function CharacterCard({
             删除
           </button>
         </div>
+
+        {showShareCard && (
+          <MiiShareCard character={character} onClose={() => setShowShareCard(false)} />
+        )}
 
         {showBindMenu && (
           <div
