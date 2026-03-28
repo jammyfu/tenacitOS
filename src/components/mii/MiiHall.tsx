@@ -130,6 +130,28 @@ function CharacterCard({
           position: "relative",
         }}
       >
+        {/* Catchphrase speech bubble */}
+        {character.catchphrase && (
+          <div
+            style={{
+              position: "absolute",
+              top: 10,
+              left: 10,
+              right: 10,
+              backgroundColor: "var(--surface-elevated)",
+              border: "1px solid var(--border)",
+              borderRadius: 10,
+              padding: "5px 10px",
+              fontSize: 11,
+              color: "var(--text-secondary)",
+              textAlign: "center",
+              fontStyle: "italic",
+            }}
+          >
+            「{character.catchphrase}」
+          </div>
+        )}
+
         {/* Avatar */}
         <div
           style={{
@@ -137,6 +159,7 @@ function CharacterCard({
             borderRadius: "50%",
             padding: 6,
             border: `2px solid ${statusColor}50`,
+            marginTop: character.catchphrase ? 28 : 0,
           }}
         >
           <MiiAvatar

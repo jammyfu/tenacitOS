@@ -138,6 +138,8 @@ export interface MiiCharacter {
   personality: Personality[];
   role: CharacterRole;
   description: string;
+  /** Short catchphrase shown as a speech bubble on the character card */
+  catchphrase?: string;
   /** Bound openclaw Docker instance ID (e.g. "main", "studio", "infra") */
   dockerInstanceId?: string;
   stats: MiiStats;

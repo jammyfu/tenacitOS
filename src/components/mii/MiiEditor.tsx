@@ -322,6 +322,7 @@ export function MiiEditor({ initial, onSave, onCancel }: MiiEditorProps) {
   const [status, setStatus] = useState<MiiCharacter["status"]>(
     initial?.status ?? "offline"
   );
+  const [catchphrase, setCatchphrase] = useState(initial?.catchphrase ?? "");
 
   const setApp = (patch: Partial<MiiAppearance>) =>
     setAppearance((prev) => ({ ...prev, ...patch }));
@@ -347,6 +348,7 @@ export function MiiEditor({ initial, onSave, onCancel }: MiiEditorProps) {
       stats,
       avatar: appearance,
       status,
+      catchphrase: catchphrase.trim() || undefined,
       dockerInstanceId: initial?.dockerInstanceId,
       createdAt: initial?.createdAt ?? now,
       updatedAt: now,
@@ -532,6 +534,28 @@ export function MiiEditor({ initial, onSave, onCancel }: MiiEditorProps) {
             resize: "vertical",
           }}
         />
+
+        {/* Catchphrase */}
+        <div style={{ width: "100%" }}>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>
+            💬 座右铭
+          </div>
+          <input
+            value={catchphrase}
+            onChange={(e) => setCatchphrase(e.target.value)}
+            placeholder="角色的口头禅..."
+            maxLength={40}
+            style={{
+              width: "100%",
+              padding: "6px 10px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--surface-elevated)",
+              color: "var(--text-secondary)",
+              fontSize: 12,
+            }}
+          />
+        </div>
       </div>
 
       {/* ── Right: Appearance editor ── */}
