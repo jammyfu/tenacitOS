@@ -7,10 +7,10 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { MiiAvatar } from "./MiiAvatar";
-import type { MiiCharacter, DockerInstance } from "@/lib/mii-types";
-import { Edit3, Trash2, Link, Unlink, Download, Upload } from "lucide-react";
+import type { MiiCharacter, DockerInstance, CharacterStatus } from "@/lib/mii-types";
+import { Edit3, Trash2, Link, Unlink, Download, Upload, Search, X } from "lucide-react";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 
@@ -476,6 +476,23 @@ export function MiiHall({
   onBindDocker,
   onImport,
 }: MiiHallProps) {
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState<CharacterStatus | "all">("all");
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return characters.filter((c) => {
+      if (filterStatus !== "all" && c.status !== filterStatus) return false;
+      if (!q) return true;
+      return (
+        c.name.toLowerCase().includes(q) ||
+        c.role.toLowerCase().includes(q) ||
+        c.personality.some((p) => p.includes(q)) ||
+        (c.description?.toLowerCase().includes(q) ?? false)
+      );
+    });
+  }, [characters, search, filterStatus]);
+
   const handleExport = () => {
     const json = JSON.stringify(characters, null, 2);
     const blob = new Blob([json], { type: "application/json" });
@@ -526,21 +543,69 @@ export function MiiHall({
     );
   }
 
+  const STATUS_FILTER_OPTIONS: { value: CharacterStatus | "all"; label: string }[] = [
+    { value: "all", label: `全部 (${characters.length})` },
+    { value: "online", label: `在线 (${characters.filter((c) => c.status === "online").length})` },
+    { value: "busy", label: `繁忙 (${characters.filter((c) => c.status === "busy").length})` },
+    { value: "idle", label: `待机 (${characters.filter((c) => c.status === "idle").length})` },
+    { value: "offline", label: `离线 (${characters.filter((c) => c.status === "offline").length})` },
+  ];
+
   return (
     <div>
-      {/* Toolbar */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 20,
-        }}
-      >
-        <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-          {characters.length} 个角色 · {characters.filter((c) => c.status === "online").length} 在线
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
+      {/* Search + filter toolbar */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+        {/* Row 1: search + import/export */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Search bar */}
+          <div style={{ flex: 1, position: "relative" }}>
+            <Search
+              size={14}
+              style={{
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "var(--text-muted)",
+                pointerEvents: "none",
+              }}
+            />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="搜索角色名称、职责、性格..."
+              style={{
+                width: "100%",
+                padding: "7px 30px 7px 32px",
+                borderRadius: 8,
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--surface-elevated)",
+                color: "var(--text-primary)",
+                fontSize: 13,
+              }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-muted)",
+                  padding: 2,
+                  display: "flex",
+                }}
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          {/* Import / Export */}
           <label
             style={{
               padding: "6px 14px",
@@ -553,6 +618,7 @@ export function MiiHall({
               alignItems: "center",
               gap: 6,
               fontSize: 12,
+              whiteSpace: "nowrap",
             }}
           >
             <Upload size={13} /> 导入
@@ -571,32 +637,67 @@ export function MiiHall({
               alignItems: "center",
               gap: 6,
               fontSize: 12,
+              whiteSpace: "nowrap",
             }}
           >
             <Download size={13} /> 导出
           </button>
         </div>
+
+        {/* Row 2: status filter tabs */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {STATUS_FILTER_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setFilterStatus(value)}
+              style={{
+                padding: "4px 12px",
+                borderRadius: "999px",
+                fontSize: 12,
+                cursor: "pointer",
+                backgroundColor: filterStatus === value ? "var(--accent)" : "var(--surface-elevated)",
+                color: filterStatus === value ? "#FFF" : "var(--text-secondary)",
+                border: `1px solid ${filterStatus === value ? "var(--accent)" : "var(--border)"}`,
+                fontWeight: filterStatus === value ? 600 : 400,
+                transition: "all 0.15s",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+          {(search || filterStatus !== "all") && (
+            <span style={{ fontSize: 12, color: "var(--text-muted)", alignSelf: "center", marginLeft: 4 }}>
+              显示 {filtered.length} / {characters.length}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-          gap: 16,
-        }}
-      >
-        {characters.map((c) => (
-          <CharacterCard
-            key={c.id}
-            character={c}
-            dockerInstances={dockerInstances}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onBindDocker={onBindDocker}
-          />
-        ))}
-      </div>
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>
+          没有匹配的角色
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+            gap: 16,
+          }}
+        >
+          {filtered.map((c) => (
+            <CharacterCard
+              key={c.id}
+              character={c}
+              dockerInstances={dockerInstances}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onBindDocker={onBindDocker}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
