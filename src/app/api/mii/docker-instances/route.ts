@@ -10,13 +10,10 @@
  */
 
 import { NextResponse } from "next/server";
-import { readFileSync, existsSync } from "fs";
 import type { DockerInstance } from "@/lib/mii-types";
 import { readCharacters } from "@/lib/mii-storage";
 import { getPrimaryBinding, getCharacterBindings } from "@/lib/mii-utils";
-import { OPENCLAW_CONFIG, OPENCLAW_WORKSPACE } from "@/lib/paths";
-import { BRANDING } from "@/config/branding";
-import { readWorkspaceIdentity } from "@/lib/workspace-identity";
+import { discoverAgents } from "@/lib/openclaw-discovery";
 
 export const dynamic = "force-dynamic";
 
@@ -28,66 +25,34 @@ interface LiveStatusPayload {
 }
 
 export async function GET() {
-  const instances: DockerInstance[] = [];
   const characters = readCharacters();
+  const instances: DockerInstance[] = discoverAgents().map((agent) => {
+    const assignedCharacter = characters.find(
+      (character) => getPrimaryBinding(character)?.instanceId === agent.id
+    );
+    const assignedDuty =
+      assignedCharacter &&
+      getCharacterBindings(assignedCharacter).find(
+        (binding) => binding.instanceId === agent.id
+      )?.duty;
 
-  // ── Read from openclaw.json (same as /api/agents) ─────────────────────────
-  try {
-    if (existsSync(OPENCLAW_CONFIG)) {
-      const config = JSON.parse(readFileSync(OPENCLAW_CONFIG, "utf-8"));
-      const configuredAgents = config?.agents?.list ?? [];
+    return {
+      id: agent.id,
+      name: agent.name,
+      status: "unknown",
+      workspace: agent.workspace,
+      model: agent.model,
+      emoji: agent.emoji,
+      color: agent.color,
+      runtime: "docker",
+      containerName: `openclaw-${agent.id === "main" ? "claw01" : agent.id}`,
+      assignedCharacterId: assignedCharacter?.id,
+      assignedCharacterName: assignedCharacter?.name,
+      assignedDuty,
+    };
+  });
 
-      if (configuredAgents.length === 0) {
-        const workspaceIdentity = readWorkspaceIdentity(OPENCLAW_WORKSPACE);
-        instances.push({
-          id: "main",
-          name: workspaceIdentity.name || BRANDING.agentName,
-          status: "unknown",
-          workspace: OPENCLAW_WORKSPACE,
-          model: config?.agents?.defaults?.model?.primary || "unknown",
-          emoji: workspaceIdentity.emoji || BRANDING.agentEmoji,
-          color: "#ff6b35",
-          runtime: "docker",
-          containerName: "openclaw-claw01",
-        });
-      }
-
-      for (const agent of configuredAgents) {
-        const agentId: string = agent.id;
-        const assignedCharacter = characters.find(
-          (character) => getPrimaryBinding(character)?.instanceId === agentId
-        );
-        const assignedDuty =
-          assignedCharacter &&
-          getCharacterBindings(assignedCharacter).find(
-            (binding) => binding.instanceId === agentId
-          )?.duty;
-
-        instances.push({
-          id: agentId,
-          name: agent.name || agentId,
-          status: "unknown",
-          workspace: agent.workspace,
-          model: agent.model?.primary || config?.agents?.defaults?.model?.primary,
-          emoji: agent?.ui?.emoji || "🤖",
-          color: agent?.ui?.color || "#666666",
-          runtime:
-            agent?.runtime === "docker" || agent?.docker
-              ? "docker"
-              : "openclaw",
-          containerName:
-            agent?.docker?.containerName || agent?.containerName || `openclaw-${agentId}`,
-          composeService: agent?.docker?.service || agent?.composeService,
-          image: agent?.docker?.image || agent?.image,
-          assignedCharacterId: assignedCharacter?.id,
-          assignedCharacterName: assignedCharacter?.name,
-          assignedDuty,
-        });
-      }
-    }
-  } catch {
-    // openclaw not configured — return empty list
-  }
+  // Discovery is already resilient; keep runtime status enrichment below.
 
   // ── Attempt live status check via HTTP (ws fallback) ──────────────────────
   // openclaw-control-plane exposes a REST endpoint alongside its WebSocket.

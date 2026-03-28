@@ -4,6 +4,7 @@ import { join } from "path";
 import { BRANDING } from "@/config/branding";
 import { OPENCLAW_DIR, OPENCLAW_WORKSPACE } from "@/lib/paths";
 import { readWorkspaceIdentity } from "@/lib/workspace-identity";
+import { discoverAgents, readAgentSessionSummary } from "@/lib/openclaw-discovery";
 
 export const dynamic = "force-dynamic";
 
@@ -207,28 +208,36 @@ function getAgentStatusFromFiles(
 }
 
 export async function GET() {
+  const workspaceIdentity = readWorkspaceIdentity(OPENCLAW_WORKSPACE);
+
   try {
     const configPath = join(OPENCLAW_DIR, "openclaw.json");
     const config: OpenClawConfig | null = existsSync(configPath)
       ? JSON.parse(readFileSync(configPath, "utf-8"))
       : null;
-    const workspaceIdentity = readWorkspaceIdentity(OPENCLAW_WORKSPACE);
 
     const configuredAgents = config?.agents?.list ?? [];
 
     if (configuredAgents.length === 0) {
-      const fallbackStatus = getAgentStatusFromFiles("main", OPENCLAW_WORKSPACE);
-      const fallbackAgents: OfficeAgent[] = [
-        {
-          id: "main",
-          name: workspaceIdentity.name || BRANDING.agentName,
-          emoji: workspaceIdentity.emoji || BRANDING.agentEmoji,
-          color: "#ff6b35",
-          role: "Main Agent",
-          currentTask: fallbackStatus.currentTask,
-          isActive: fallbackStatus.isActive,
-        },
-      ];
+      const fallbackAgents: OfficeAgent[] = discoverAgents().map((agent) => {
+        const fileStatus = getAgentStatusFromFiles(agent.id, agent.workspace);
+        const sessionStatus = readAgentSessionSummary(agent.id);
+
+        return {
+          id: agent.id,
+          name: agent.name,
+          emoji: agent.emoji,
+          color: agent.color,
+          role: agent.id === "main" ? "Main Agent" : "Agent",
+          currentTask:
+            fileStatus.currentTask !== "SLEEPING: zzZ..."
+              ? fileStatus.currentTask
+              : sessionStatus.updatedAt
+                ? `IDLE: last session ${new Date(sessionStatus.updatedAt).toLocaleString("zh-CN")}`
+                : "SLEEPING: zzZ...",
+          isActive: fileStatus.isActive,
+        };
+      });
 
       return NextResponse.json({ agents: fallbackAgents, source: "fallback" });
     }
