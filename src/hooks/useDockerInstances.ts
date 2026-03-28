@@ -1,7 +1,7 @@
 /**
  * useDockerInstances — fetches openclaw Docker instances
  *
- * Polls /api/mii/docker-instances every 10s.
+ * Polls /api/mii/docker-instances every 5s.
  * On mount, also attempts a direct WebSocket connection to
  * ws://127.0.0.1:18789 to receive real-time status updates.
  */
@@ -21,7 +21,7 @@ interface AgentStatusMessage {
   agents?: LiveAgentStatus[];
 }
 
-export function useDockerInstances(pollIntervalMs = 10_000) {
+export function useDockerInstances(pollIntervalMs = 5_000) {
   const [instances, setInstances] = useState<DockerInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
@@ -78,6 +78,8 @@ export function useDockerInstances(pollIntervalMs = 10_000) {
                       ? "running"
                       : live.status === "stopped"
                       ? "stopped"
+                      : live.status === "error"
+                      ? "error"
                       : "unknown",
                 };
               })

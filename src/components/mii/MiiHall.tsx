@@ -4,7 +4,7 @@
 
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { Download, Edit3, Link, Trash2, Unlink, Upload } from "lucide-react";
 import { MiiAvatar } from "./MiiAvatar";
 import type { DockerInstance, MiiCharacter } from "@/lib/mii-types";
@@ -76,6 +76,7 @@ function CharacterCard({
   onBindDocker,
 }: CharacterCardProps) {
   const [showBindMenu, setShowBindMenu] = useState(false);
+  const avatarRef = useRef<SVGSVGElement>(null);
   const primaryBinding = getPrimaryBinding(character);
   const bindings = getCharacterBindings(character);
   const primaryInstance = dockerInstances.find(
@@ -87,6 +88,24 @@ function CharacterCard({
       : primaryInstance?.status === "stopped"
         ? "offline"
         : character.status;
+
+  // dot/border color driven by docker instance status for precise signal
+  const instanceDotColor =
+    primaryInstance?.status === "running"
+      ? "#32D74B"
+      : primaryInstance?.status === "error"
+        ? "#FF453A"
+        : primaryInstance?.status === "stopped"
+          ? "#525252"
+          : primaryInstance?.status === "unknown"
+            ? "#888"
+            : STATUS_COLORS[effectiveStatus];
+
+  // label shown in status badge — override for docker error
+  const statusLabel =
+    primaryInstance?.status === "error"
+      ? "异常"
+      : STATUS_LABELS[effectiveStatus];
 
   return (
     <article
@@ -116,16 +135,17 @@ function CharacterCard({
             borderRadius: "50%",
             background:
               "radial-gradient(circle at top, rgba(255,255,255,0.26), transparent 42%), var(--surface-elevated)",
-            border: `2px solid ${STATUS_COLORS[effectiveStatus]}55`,
+            border: `2px solid ${instanceDotColor}55`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
           <MiiAvatar
+            ref={avatarRef}
             appearance={character.avatar}
             size={88}
-            statusColor={STATUS_COLORS[effectiveStatus]}
+            statusColor={instanceDotColor}
           />
         </div>
 
@@ -163,8 +183,8 @@ function CharacterCard({
                 gap: 6,
                 padding: "4px 10px",
                 borderRadius: 999,
-                backgroundColor: `${STATUS_COLORS[effectiveStatus]}20`,
-                color: STATUS_COLORS[effectiveStatus],
+                backgroundColor: `${instanceDotColor}20`,
+                color: instanceDotColor,
                 fontSize: 11,
                 fontWeight: 700,
                 whiteSpace: "nowrap",
@@ -175,10 +195,10 @@ function CharacterCard({
                   width: 7,
                   height: 7,
                   borderRadius: "50%",
-                  backgroundColor: STATUS_COLORS[effectiveStatus],
+                  backgroundColor: instanceDotColor,
                 }}
               />
-              {STATUS_LABELS[effectiveStatus]}
+              {statusLabel}
             </div>
           </div>
 
@@ -264,6 +284,23 @@ function CharacterCard({
           </div>
         )}
 
+        {character.catchphrase && (
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--text-secondary)",
+              backgroundColor: "var(--surface-elevated)",
+              border: "1px solid var(--border)",
+              borderRadius: 12,
+              padding: "6px 12px",
+              fontStyle: "italic",
+              position: "relative",
+            }}
+          >
+            💬 {character.catchphrase}
+          </div>
+        )}
+
         {character.description && (
           <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
             {character.description}
@@ -290,6 +327,27 @@ function CharacterCard({
           <button type="button" onClick={() => setShowBindMenu((open) => !open)} style={ghostButtonStyle}>
             {primaryInstance ? <Unlink size={13} /> : <Link size={13} />}
             {primaryInstance ? "改绑主实例" : "快速绑定"}
+          </button>
+          <button
+            type="button"
+            title="导出 SVG"
+            onClick={() => {
+              if (!avatarRef.current) return;
+              const svgEl = avatarRef.current;
+              const serializer = new XMLSerializer();
+              const svgStr = serializer.serializeToString(svgEl);
+              const blob = new Blob([svgStr], { type: "image/svg+xml" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `mii-${character.name.replace(/\s+/g, "-")}.svg`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            style={ghostButtonStyle}
+          >
+            <Download size={13} />
+            SVG
           </button>
           <button type="button" onClick={() => onEdit(character)} style={ghostButtonStyle}>
             <Edit3 size={13} />
