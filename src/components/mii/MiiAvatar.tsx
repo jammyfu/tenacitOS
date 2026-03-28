@@ -505,12 +505,13 @@ function Body({
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export function MiiAvatar({
+export const MiiAvatar = React.forwardRef<SVGSVGElement, MiiAvatarProps>(
+function MiiAvatar({
   appearance,
   size = 100,
   statusColor,
   className,
-}: MiiAvatarProps) {
+}: MiiAvatarProps, ref) {
   const skinColor = SKIN_TONE_COLORS[appearance.skinTone];
   const hairColor = HAIR_COLOR_VALUES[appearance.hairColor];
   const eyeColor = EYE_COLOR_VALUES[appearance.eyeColor];
@@ -519,6 +520,7 @@ export function MiiAvatar({
 
   return (
     <svg
+      ref={ref}
       width={size}
       height={size * 1.2}
       viewBox="0 0 100 120"
@@ -572,7 +574,8 @@ export function MiiAvatar({
       )}
     </svg>
   );
-}
+});
+MiiAvatar.displayName = "MiiAvatar";
 
 /** Compact square avatar for use in lists / cards */
 export function MiiAvatarCard({

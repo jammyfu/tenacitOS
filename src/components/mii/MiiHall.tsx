@@ -7,7 +7,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { MiiAvatar } from "./MiiAvatar";
 import type { MiiCharacter, DockerInstance, CharacterStatus } from "@/lib/mii-types";
 import { Edit3, Trash2, Link, Unlink, Download, Upload, Search, X } from "lucide-react";
@@ -85,6 +85,26 @@ function CharacterCard({
   onBindDocker,
 }: CharacterCardProps) {
   const [showBindMenu, setShowBindMenu] = useState(false);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const handleExportSVG = () => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const serializer = new XMLSerializer();
+    let svgStr = serializer.serializeToString(svg);
+    // Add name label below avatar
+    svgStr = svgStr.replace(
+      "</svg>",
+      `<text x="50" y="118" text-anchor="middle" font-size="8" font-family="sans-serif" fill="#888">${character.name} · ${character.role}</text></svg>`
+    );
+    const blob = new Blob([svgStr], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `mii-${character.name}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
   const statusColor = STATUS_COLORS[character.status];
   const boundInstance = dockerInstances.find(
     (d) => d.id === character.dockerInstanceId
@@ -163,6 +183,7 @@ function CharacterCard({
           }}
         >
           <MiiAvatar
+            ref={svgRef}
             appearance={character.avatar}
             size={80}
             statusColor={STATUS_COLORS[effectiveStatus]}
@@ -414,6 +435,24 @@ function CharacterCard({
           justifyContent: "flex-end",
         }}
       >
+        <button
+          onClick={handleExportSVG}
+          title="导出 SVG"
+          style={{
+            padding: "5px 10px",
+            borderRadius: 6,
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--surface-elevated)",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            fontSize: 12,
+          }}
+        >
+          <Download size={12} /> SVG
+        </button>
         <button
           onClick={() => onEdit(character)}
           style={{
