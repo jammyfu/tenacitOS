@@ -1,65 +1,119 @@
 import { NextResponse } from "next/server";
-import { readFileSync, readdirSync, statSync } from "fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "fs";
 import { join } from "path";
+import { discoverAgents, readOpenClawConfig } from "@/lib/openclaw-discovery";
+import { OPENCLAW_DIR } from "@/lib/paths";
 
 export const dynamic = "force-dynamic";
 
+interface OpenClawConfig {
+  channels?: {
+    telegram?: {
+      dmPolicy?: string;
+      accounts?: Record<string, { botToken?: string; dmPolicy?: string }>;
+    };
+  };
+}
+
+interface StoredSession {
+  sessionId?: string;
+  updatedAt?: number;
+  chatType?: string;
+  model?: string;
+  lastChannel?: string;
+  deliveryContext?: {
+    channel?: string;
+  };
+  origin?: {
+    provider?: string;
+    surface?: string;
+    chatType?: string;
+  };
+  sessionFile?: string;
+}
+
+function readRecentMemoryFiles(workspace: string): Array<{ date: string; size: number; modified: string }> {
+  const memoryPath = join(workspace, "memory");
+
+  if (!existsSync(memoryPath)) {
+    return [];
+  }
+
+  try {
+    return readdirSync(memoryPath)
+      .filter((file) => file.match(/^\d{4}-\d{2}-\d{2}\.md$/))
+      .map((file) => {
+        const stat = statSync(join(memoryPath, file));
+
+        return {
+          date: file.replace(".md", ""),
+          size: stat.size,
+          modified: stat.mtime.toISOString(),
+        };
+      })
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 7);
+  } catch {
+    return [];
+  }
+}
+
+function readSessionDetails(agentId: string) {
+  const sessionsPath = join(OPENCLAW_DIR, "agents", agentId, "sessions", "sessions.json");
+
+  if (!existsSync(sessionsPath)) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(sessionsPath, "utf-8")) as Record<string, StoredSession>;
+
+    return Object.entries(parsed)
+      .map(([key, session]) => ({
+        key,
+        sessionId: session.sessionId || key,
+        updatedAt: session.updatedAt ? new Date(session.updatedAt).toISOString() : undefined,
+        channel: session.deliveryContext?.channel || session.lastChannel || "unknown",
+        provider: session.origin?.provider || session.origin?.surface || "unknown",
+        chatType: session.chatType || session.origin?.chatType || "unknown",
+        model: session.model,
+        sessionFile: session.sessionFile,
+      }))
+      .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))
+      .slice(0, 10);
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    const config = readOpenClawConfig() as OpenClawConfig | null;
+    const agent = discoverAgents().find((entry) => entry.id === id);
 
-    // Read openclaw config
-    const configPath = (process.env.OPENCLAW_DIR || "/root/.openclaw") + "/openclaw.json";
-    const config = JSON.parse(readFileSync(configPath, "utf-8"));
-
-    // Find agent
-    const agent = config.agents.list.find((a: any) => a.id === id);
     if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
-    // Get memory files
-    const memoryPath = join(agent.workspace, "memory");
-    let recentFiles: Array<{ date: string; size: number; modified: string }> =
-      [];
-
-    try {
-      const files = readdirSync(memoryPath).filter((f) =>
-        f.match(/^\d{4}-\d{2}-\d{2}\.md$/)
-      );
-      recentFiles = files
-        .map((file) => {
-          const stat = statSync(join(memoryPath, file));
-          return {
-            date: file.replace(".md", ""),
-            size: stat.size,
-            modified: stat.mtime.toISOString(),
-          };
-        })
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(0, 7);
-    } catch (e) {
-      // Memory directory doesn't exist
-    }
-
-    // Get session info (from OpenClaw API if available)
-    // For now, we return mock data
-    const sessions: Array<any> = [];
-
-    // Get telegram account info
-    const telegramAccount = config.channels?.telegram?.accounts?.[id];
+    const telegramAccount = config?.channels?.telegram?.accounts?.[id];
+    const sessions = readSessionDetails(id);
+    const recentFiles = readRecentMemoryFiles(agent.workspace);
 
     return NextResponse.json({
       agent: {
         id: agent.id,
         name: agent.name,
-        model: agent.model?.primary || config.agents.defaults.model.primary,
+        emoji: agent.emoji,
+        color: agent.color,
+        model: agent.model,
         workspace: agent.workspace,
-        dmPolicy: telegramAccount?.dmPolicy,
-        allowAgents: agent.subagents?.allowAgents || [],
+        source: agent.source,
+        dmPolicy: telegramAccount?.dmPolicy || config?.channels?.telegram?.dmPolicy || "pairing",
+        allowAgents: [],
         telegramConfigured: !!telegramAccount?.botToken,
       },
       memory: {
