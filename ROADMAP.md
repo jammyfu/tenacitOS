@@ -14,25 +14,30 @@
 - [x] **Step 8**: Docker 实例 API (`api/mii/docker-instances/route.ts`) — 读取 `openclaw.json`，调用控制平面 REST 获取实时状态
 - [x] **Step 9**: `useDockerInstances` Hook — REST 轮询（10s）+ WebSocket 实时推送，优雅降级
 
+## 已完成（续）
+
+- [x] **Step 10**: Bug 修复 + 稳定性 + 随机外观按钮
+- [x] **Step 11**: 角色对话气泡 / 座右铭 — `catchphrase` 字段，语音泡展示
+- [x] **Step 12**: 画廊搜索 & 分组过滤 — 按名称/职责/性格实时过滤
+- [x] **Step 13**: 单角色 SVG 下载 — 每张卡片独立导出 SVG
+- [x] **Step 14**: Agents 视图 Mii 集成 — `AgentRow` 用 `MiiAvatarCard` 替换抽象图标
+- [x] **Step 15**: 实例状态同步、气泡渲染、SVG 导出优化
+- [x] **Step 16**: 搜索栏 + 职责分组画廊 (MiiHall gallery)
+- [x] **Step 17**: 丰富外观选项 — 新增 5 种发型（ponytail/pigtails/curly/afro/braids）+ 头盔配件
+- [x] **Step 18**: 拖拽排序 — HTML5 Drag & Drop，PATCH `/api/mii` 批量持久化
+- [x] **Step 19**: 角色页面增强 — 汇总卡片、快速筛选标签（All/Online/Offline/Unbound）、顶部 Toolbar、空状态引导
+
 ## 进行中
 
-- [ ] **Step 10**: Bug 修复 + 稳定性 + 随机外观按钮 ← **当前正在做**
-  - 移除 `MiiEditor.tsx` 中未使用的 Node.js `crypto` 导入
-  - `mii-storage.ts` 自动创建 `data/` 目录，防止首次写入失败
-  - 编辑器新增「随机外观」按钮，一键生成随机角色外观
+无
 
-## 待开发
+## 下一阶段规划
 
-- [ ] **Step 11**: 角色对话气泡 / 座右铭 — `MiiCharacter` 增加 `catchphrase` 字段，卡片展示语音泡
-- [ ] **Step 12**: 画廊搜索 & 分组过滤 — 按名称/职责/性格实时过滤，按状态/职责分组
-- [ ] **Step 13**: 单角色 SVG 下载 — 每张角色卡片支持导出含名称标签的独立 SVG 文件
-- [ ] **Step 14**: Agents 视图 Mii 集成 — `AgentRow` 当实例绑定角色时用 `MiiAvatarCard` 替换抽象图标
-- [ ] **Step 15**: 外观多样性增强 — 新增辫子/双马尾/卷发发型，猫眼/下垂眼眼型，耳机/徽章配件
-- [ ] **Step 16**: 角色拖拽排序 — 画廊支持拖拽调整顺序（HTML5 Drag & Drop），结果持久化
-- [ ] **Step 17**: Arcade 指挥舱集成 — Sessions/Agents 页面用 Mii 角色卡替换抽象代理单元
-- [ ] **Step 18**: 角色性格 → 动态对话 — 根据性格标签自动生成个性化对话气泡内容
-- [ ] **Step 19**: TopBar Mii 状态指示 — TopBar 右侧展示当前活跃 Mii 的头像缩略图
-- [ ] **Step 20**: openclaw-control-plane 深度集成 — 双向同步角色配置，状态变更实时反映
+- [ ] **Step 21**: 角色分享 — 生成分享链接 / 二维码，可读分享页（无需登录）
+- [ ] **Step 22**: Arcade 迷你指挥舱视图 — Sessions/Agents 页面 Mii 角色卡替换抽象代理单元，实时状态气泡
+- [ ] **Step 23**: 角色 AI 性格描述生成 — 根据性格标签调用 Claude API 自动生成角色简介
+- [ ] **Step 24**: 多语言支持 — 中英文界面切换（`i18n` 或简单 key→label 映射）
+- [ ] **Step 25**: openclaw-control-plane 深度集成 — 双向同步角色配置，状态变更实时反映
 
 ---
 
@@ -455,4 +460,4 @@
 ---
 
 *Creado: 2026-02-07*
-*Última actualización: 2026-02-21 (Tenacitas nightly shift)*
+*Última actualización: 2026-03-28 (Steps 17-19 complete)*
