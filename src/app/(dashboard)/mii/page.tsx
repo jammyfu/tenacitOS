@@ -8,7 +8,8 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { Download, Plus, Smile, Upload } from "lucide-react";
+import Link from "next/link";
+import { Download, Plus, Smile, Upload, Joystick } from "lucide-react";
 import { MiiHall } from "@/components/mii/MiiHall";
 import { MiiEditor } from "@/components/mii/MiiEditor";
 import { useDockerInstances } from "@/hooks/useDockerInstances";
@@ -234,6 +235,10 @@ export default function MiiPage() {
         {/* ── Toolbar ── */}
         {!showEditor && (
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <Link href="/mii/arcade" style={{ ...toolbarSecondaryStyle, textDecoration: "none" }}>
+              <Joystick size={14} />
+              Arcade 指挥舱
+            </Link>
             <button
               type="button"
               onClick={() => importInputRef.current?.click()}
