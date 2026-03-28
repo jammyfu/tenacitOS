@@ -47,6 +47,11 @@ const HAIR_STYLES: HairStyle[] = [
   "spiky",
   "bun",
   "side-swept",
+  "ponytail",
+  "pigtails",
+  "curly",
+  "afro",
+  "braids",
 ];
 const HAIR_COLORS = Object.keys(HAIR_COLOR_VALUES) as HairColor[];
 const SKIN_TONES = Object.keys(SKIN_TONE_COLORS) as SkinTone[];
@@ -77,6 +82,7 @@ const ACCESSORY_TYPES: AccessoryType[] = [
   "hat-beanie",
   "headband",
   "earrings",
+  "helmet",
 ];
 const SHIRT_STYLES: ShirtStyle[] = ["plain", "collar", "hoodie", "tank", "turtleneck"];
 const PERSONALITIES: Personality[] = [

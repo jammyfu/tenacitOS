@@ -118,6 +118,80 @@ function HairLayer({
         </>
       );
     case "side-swept":
+      return (
+        <path
+          d="M15,55 C15,33 28,15 50,15 C72,15 85,33 85,55 L85,35 C82,15 70,5 55,5 C38,5 18,12 15,35 Z"
+          fill={color}
+        />
+      );
+    case "ponytail":
+      return (
+        <>
+          {/* Top hair cap */}
+          <path
+            d="M15,42 C15,22 28,10 50,10 C72,10 85,22 85,42 L85,30 C80,12 65,4 50,4 C35,4 20,12 15,30 Z"
+            fill={color}
+          />
+          {/* Ponytail hanging down */}
+          <path
+            d="M43,8 Q36,22 38,46 Q40,68 44,88 Q50,95 56,88 Q60,68 62,46 Q64,22 57,8 Z"
+            fill={color}
+          />
+          {/* Hair band */}
+          <ellipse cx="50" cy="10" rx="10" ry="5" fill={color} opacity="0.65" />
+        </>
+      );
+    case "pigtails":
+      return (
+        <>
+          {/* Top hair cap */}
+          <path
+            d="M15,42 C15,22 28,10 50,10 C72,10 85,22 85,42 L85,32 C80,16 65,6 50,6 C35,6 20,16 15,32 Z"
+            fill={color}
+          />
+          {/* Left pigtail */}
+          <path d="M15,42 Q6,50 7,66 Q8,80 14,88 Q18,90 20,86 Q19,70 20,52 Z" fill={color} />
+          {/* Right pigtail */}
+          <path d="M85,42 Q94,50 93,66 Q92,80 86,88 Q82,90 80,86 Q81,70 80,52 Z" fill={color} />
+          {/* Hair ties */}
+          <circle cx="17" cy="47" r="4" fill={color} opacity="0.7" />
+          <circle cx="83" cy="47" r="4" fill={color} opacity="0.7" />
+        </>
+      );
+    case "curly":
+      return (
+        <path
+          d="M50,6 C55,3 63,4 67,8 C72,4 79,5 82,10 C87,9 90,14 88,20 C92,24 92,31 89,36 C91,42 89,49 85,53 C85,75 72,92 50,92 C28,92 15,75 15,53 C11,49 9,42 11,36 C8,31 8,24 12,20 C10,14 13,9 18,10 C21,5 28,4 33,8 C37,4 45,3 50,6 Z"
+          fill={color}
+        />
+      );
+    case "afro":
+      return (
+        <ellipse cx="50" cy="30" rx="46" ry="38" fill={color} />
+      );
+    case "braids":
+      return (
+        <>
+          {/* Hair cap */}
+          <path
+            d="M15,42 C15,22 28,10 50,10 C72,10 85,22 85,42 L85,30 C80,12 65,4 50,4 C35,4 20,12 15,30 Z"
+            fill={color}
+          />
+          {/* Left braid */}
+          <path d="M15,38 Q10,52 11,70 Q12,85 16,92 Q20,95 22,92 Q21,75 21,55 Q18,46 15,38 Z" fill={color} />
+          {/* Right braid */}
+          <path d="M85,38 Q90,52 89,70 Q88,85 84,92 Q80,95 78,92 Q79,75 79,55 Q82,46 85,38 Z" fill={color} />
+          {/* Braid texture */}
+          <line x1="13" y1="52" x2="22" y2="52" stroke={skinColor} strokeWidth="1.2" opacity="0.4" />
+          <line x1="13" y1="62" x2="22" y2="62" stroke={skinColor} strokeWidth="1.2" opacity="0.4" />
+          <line x1="13" y1="72" x2="22" y2="72" stroke={skinColor} strokeWidth="1.2" opacity="0.4" />
+          <line x1="13" y1="82" x2="22" y2="82" stroke={skinColor} strokeWidth="1.2" opacity="0.4" />
+          <line x1="78" y1="52" x2="87" y2="52" stroke={skinColor} strokeWidth="1.2" opacity="0.4" />
+          <line x1="78" y1="62" x2="87" y2="62" stroke={skinColor} strokeWidth="1.2" opacity="0.4" />
+          <line x1="78" y1="72" x2="87" y2="72" stroke={skinColor} strokeWidth="1.2" opacity="0.4" />
+          <line x1="78" y1="82" x2="87" y2="82" stroke={skinColor} strokeWidth="1.2" opacity="0.4" />
+        </>
+      );
     default:
       return (
         <path
@@ -433,6 +507,22 @@ function Accessory({
         <g>
           <circle cx="14" cy="58" r="3" fill={color} />
           <circle cx="86" cy="58" r="3" fill={color} />
+        </g>
+      );
+    case "helmet":
+      return (
+        <g>
+          {/* Helmet shell */}
+          <path
+            d="M12,52 C12,28 28,6 50,6 C72,6 88,28 88,52 L88,40 C88,18 72,3 50,3 C28,3 12,18 12,40 Z"
+            fill={color}
+          />
+          {/* Chin guard strap */}
+          <rect x="14" y="50" width="72" height="7" rx="2" fill={color} opacity="0.85" />
+          {/* Visor */}
+          <path d="M18,40 L82,40 L82,52 Q50,56 18,52 Z" fill="#4A90E2" opacity="0.55" />
+          {/* Highlight */}
+          <path d="M28,10 Q50,6 72,10 Q60,8 50,8 Q40,8 28,10 Z" fill="white" opacity="0.2" />
         </g>
       );
     case "none":

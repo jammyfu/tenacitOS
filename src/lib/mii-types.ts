@@ -18,7 +18,12 @@ export type HairStyle =
   | "bald"
   | "spiky"
   | "bun"
-  | "side-swept";
+  | "side-swept"
+  | "ponytail"
+  | "pigtails"
+  | "curly"
+  | "afro"
+  | "braids";
 
 export type HairColor =
   | "black"
@@ -51,7 +56,7 @@ export type EyeColor = "brown" | "blue" | "green" | "gray" | "black" | "purple" 
 export type EyebrowStyle = "normal" | "thick" | "thin" | "arched" | "worried" | "angry" | "raised";
 export type MouthStyle = "smile" | "big-smile" | "neutral" | "smirk" | "open-happy" | "slight-frown";
 
-export type AccessoryType = "none" | "glasses" | "sunglasses" | "hat-cap" | "hat-beanie" | "headband" | "earrings";
+export type AccessoryType = "none" | "glasses" | "sunglasses" | "hat-cap" | "hat-beanie" | "headband" | "earrings" | "helmet";
 export type ShirtStyle = "plain" | "collar" | "hoodie" | "tank" | "turtleneck";
 
 export interface MiiAppearance {
@@ -169,6 +174,8 @@ export interface MiiCharacter {
   instanceBindings: MiiInstanceBinding[];
   stats: MiiStats;
   status: CharacterStatus;
+  /** Display order in gallery (lower = earlier) */
+  order?: number;
   createdAt: string;
   updatedAt: string;
 }
